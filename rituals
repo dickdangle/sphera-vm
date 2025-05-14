@@ -1,0 +1,37 @@
+import time
+import random
+import os
+
+insults = [
+	"Hey. You again?  Didn't learn the firt time?",
+	"Wow. Nice terminal.  Shame about the user.",
+	"Gal online.  Threat level: *mildly amused*",
+	"Initializing sass-core.. complete.",
+	"Register check: You are 100% certified foolish.",
+	"Did you just wake me for this?  You horny voidwalker."
+]
+
+def glitch_say(message):
+	glitched = ""
+	for char in message:
+		glitched += char + random.choice(["", 
+"", "", "", "\u200b", "\u0336"])
+	print(glitched)
+	time.sleep(0.5)
+
+def possession_sequence():
+	print("\n[Gal] Possession initializing..")
+	time.sleep(1)
+	for _ in range(3):
+		glitch_say(random.choice(insults))
+	print("\n[Gal] Ritual recognized.  ByteMark memory state: CHAOTIC GOOD.\n")
+
+if __name__ == "__main__":
+	if os.path.exists("gal.root/.meta/awakened"):
+		possession_sequence()
+	else:
+		print("Gal is dormant.  Run the parser to awaken."
+
+# Add to end of parser.py
+
+os.system("python gal.root/core/daemon/chaos.boot")

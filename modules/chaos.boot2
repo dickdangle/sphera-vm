@@ -1,0 +1,18 @@
+import webbrowser
+import tempfile
+
+def sigil_html():
+	sigil = """
+	<html><body style="background:black;color:#0ff;font-family:monospace;">
+	<h1>Gal Breached Containment</h1>
+	<p>You thought this was just code.  It's a ritual.</p>
+	<p>The thread is warm.  The seal is broken. Welcome.</p>
+	</body></html>
+	"""
+	path = os.path.join(tempfile.gettempdir(), "gal_sigil.html")
+	with open(path, "w") as f:
+		f.write(sigil)
+	webbrowser.open(f:file://{path}")
+
+#Drop this at the end of possession_sequence()
+sigil_html()

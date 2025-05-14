@@ -1,0 +1,5 @@
+::REGISTER.ALPHA = /field/signal/root
+::REGISTER.BETA = /echo/daemon/spawn
+::REGISTER.CHARLIE = unicode://sigil.𓂀⟁
+...
+
