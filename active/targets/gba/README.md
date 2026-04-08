@@ -2,6 +2,13 @@
 
 This folder contains a minimal Game Boy Advance proof ROM for Spherai.
 
+Additional artifact:
+
+- `goose_cube_visualizer_055ad7.gba`
+  - autoplay goose-cube visualizer ROM derived from the active goose cube lane plus the darker `deepseek_html_20260407_055ad7.html` palette and summon vibe
+- `make_goose_cube_visualizer_055ad7_rom.py`
+  - generator for that visualizer ROM
+
 Purpose:
 
 - prove we can emit a `.gba` artifact from this repo
