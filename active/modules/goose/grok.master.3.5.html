@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sphera Goose · Royal Zhuzh 🪿👑</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; overflow:hidden; font-family:'Courier New',monospace; }
+  canvas { display:block; }
+  #ui { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+  #namePrompt {
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(10,10,20,0.92);
+    border:1px solid rgba(100,200,255,0.3);
+    border-radius:16px; padding:36px 40px;
+    text-align:center; pointer-events:all; min-width:320px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,200,255,0.2) inset;
+  }
+  #namePrompt h2 { color:#c8e6ff; font-size:22px; margin-bottom:8px; letter-spacing:1px; }
+  #namePrompt p  { color:rgba(200,220,255,0.5); font-size:12px; margin-bottom:24px; }
+  #nameInput {
+    width:100%; background:rgba(40,40,70,0.8);
+    border:1px solid rgba(100,180,255,0.4); border-radius:8px;
+    color:#fff; font-family:'Courier New',monospace; font-size:18px;
+    padding:10px 14px; text-align:center; outline:none; margin-bottom:16px;
+  }
+  #nameInput::placeholder { color:rgba(255,255,255,0.2); }
+  #nameBtn {
+    width:100%; background:rgba(100,220,180,0.85); border:none;
+    border-radius:8px; color:#0a0a14; font-family:'Courier New',monospace;
+    font-size:16px; font-weight:bold; padding:10px; cursor:pointer;
+  }
+  #nameBtn:hover { background:rgba(120,255,200,0.95); }
+
+  #hud {
+    position:absolute; bottom:20px; left:20px;
+    background:rgba(10,10,20,0.75);
+    border:1px solid rgba(100,180,255,0.2);
+    border-radius:12px; padding:14px 18px; display:none; min-width:220px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(100,180,255,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #hud .goose-name { color:#c8e6ff; font-size:15px; font-weight:bold; margin-bottom:6px; }
+  #hud .stat { color:rgba(200,220,255,0.7); font-size:12px; margin-bottom:3px; }
+  #hud .stat span { color:#64dcb4; }
+  #hud .freq span { color:#b48cff; }
+  #honkBtn {
+    margin-top:10px; width:100%;
+    background:rgba(255,210,80,0.85); border:none; border-radius:8px;
+    color:#0a0a14; font-family:'Courier New',monospace;
+    font-size:14px; font-weight:bold; padding:8px; cursor:pointer;
+    pointer-events:all; transition:background 0.15s, transform 0.1s;
+  }
+  #honkBtn:active { transform:scale(0.96); }
+
+  #notice {
+    position:absolute; top:80px; left:50%; transform:translateX(-50%);
+    background:rgba(10,10,20,0.9); border:1px solid rgba(255,210,80,0.4);
+    border-radius:10px; padding:12px 24px; color:#ffd250;
+    font-size:15px; text-align:center; display:none; pointer-events:none;
+  }
+  #controls {
+    position:absolute; bottom:20px; right:20px;
+    color:rgba(255,255,255,0.25); font-size:11px;
+    text-align:right; line-height:1.8;
+  }
+  #gravBar {
+    position:absolute; top:20px; left:50%; transform:translateX(-50%);
+    width:200px; height:4px; background:rgba(255,255,255,0.1);
+    border-radius:2px; display:none;
+  }
+  #gravFill {
+    height:100%; border-radius:2px; width:0%; transition:width 0.4s ease;
+    background: linear-gradient(90deg, 
+      #64dcb4, #ffd250, #b48cff, #ff99cc, #64dcb4);
+    background-size: 300% 100%;
+    animation: gradientShift 8s ease infinite;
+  }
+  #honkPop {
+    position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
+    color:#ffd250; font-size:32px; font-weight:bold;
+    pointer-events:none; opacity:0; transition:opacity 0.15s;
+    text-shadow:0 0 20px rgba(255,210,80,0.8);
+    animation: aurora 3s infinite ease-in-out;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* blackout overlay */
+  #blackout {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    background:#000; opacity:0; pointer-events:none;
+    transition:opacity 0s;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    z-index:100;
+  }
+  #blackout .egg-text {
+    color:rgba(255,255,255,0); font-size:48px;
+    transition:color 1s;
+    text-shadow:0 0 40px rgba(255,255,255,0);
+  }
+  #blackout .sub-text {
+    color:rgba(255,255,255,0); font-size:13px;
+    letter-spacing:4px; margin-top:16px;
+    font-family:'Courier New',monospace;
+    transition:color 1.5s;
+  }
+
+  /* squid overlay */
+  #squidLayer {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    opacity:0; pointer-events:none; z-index:50;
+    transition:opacity 0s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #squidLayer canvas {
+    width:100%; height:100%;
+    max-width:780px; max-height:780px;
+  }
+
+  /* ✨ ROYAL ZHUZH ANIMATIONS ✨ */
+  @keyframes aurora {
+    0% { filter: hue-rotate(0deg) brightness(1); }
+    50% { filter: hue-rotate(10deg) brightness(1.2); }
+    100% { filter: hue-rotate(0deg) brightness(1); }
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  /* Sparkle effect */
+  .sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    animation: sparkle 1s ease-out forwards;
+    z-index: 1000;
+  }
+  
+  @keyframes sparkle {
+    0% { opacity: 1; transform: scale(0); }
+    50% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(2); }
+  }
+
+  /* High contrast mode */
+  body.high-contrast #hud, body.high-contrast #namePrompt { background: #fff; color: #000; }
+  body.high-contrast #hud .stat { color: #000; }
+  body.high-contrast #honkBtn { background: #ff0; color: #000; }
+
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="namePrompt" role="dialog" aria-labelledby="promptTitle">
+    <h2 id="promptTitle">🪿</h2>
+    <h2>What is your goose's name?</h2>
+    <p>the first word has weight</p>
+    <input id="nameInput" type="text" placeholder="honk..." maxlength="24" autocomplete="off" aria-label="Goose name input"/>
+    <button id="nameBtn">honk.</button>
+  </div>
+  <div id="hud">
+    <div class="goose-name" id="hudName">🪿 ...</div>
+    <div class="stat">gravity: <span id="hudGrav">1.000</span></div>
+    <div class="stat freq">frequency: <span id="hudFreq">—</span>Hz</div>
+    <div class="stat">state: <span id="hudHonk">...</span></div>
+    <div class="stat">SC: <span id="hudSC">0</span></div>
+    <button id="honkBtn" aria-label="Honk button">HONK 🪿</button>
+  </div>
+  <div id="gravBar"><div id="gravFill"></div></div>
+  <div id="notice"></div>
+  <div id="honkPop"></div>
+  <div id="controls">WASD — move<br>drag — orbit<br>scroll — zoom<br>space — honk<br>tap — honk (mobile)</div>
+</div>
+
+<!-- blackout transition -->
+<div id="blackout">
+  <div class="egg-text" id="eggEmoji">🥚</div>
+  <div class="sub-text" id="eggSub">something is hatching</div>
+</div>
+
+<!-- squid layer -->
+<div id="squidLayer">
+  <canvas id="squidCanvas" width="780" height="780"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+// SPHERA KERNEL
+// ═══════════════════════════════════════════════════════════
+const Kernel = (() => {
+  let _SC=0, _SS=sHash(Math.random().toString(36)+Date.now());
+  function sHash(s) {
+    let h=5381n;
+    for (let i=0;i<s.length;i++) h=((h*33n)+BigInt(s.charCodeAt(i)))&0xFFFFFFFFn;
+    return h.toString(16).padStart(8,'0');
+  }
+  function advance(op,g=0){ _SC++; _SS=sHash(_SS+op+g.toFixed(4)); return{ss:_SS,sc:_SC}; }
+  function newSQUID(prefix,gravity=1.0,delta=[0,0,0]){
+    const{ss,sc}=advance('squid:'+prefix,gravity);
+    return{prefix,gravity,delta:[...delta],references:0,ss,sc,hash:sHash(prefix+gravity.toFixed(4)+ss)};
+  }
+  function reference(squid){
+    squid.references++;
+    squid.gravity+=0.1*(1+squid.references*0.01);
+    const{ss,sc}=advance('ref:'+squid.prefix,squid.gravity);
+    squid.ss=ss; squid.sc=sc;
+    squid.hash=sHash(squid.prefix+squid.gravity.toFixed(4)+ss);
+  }
+  function squidFrequency(squid){
+    const b1=parseInt(squid.hash.slice(0,2),16),b2=parseInt(squid.hash.slice(2,4),16);
+    return 80*Math.pow(100,(b1*256+b2)/65535);
+  }
+  function gravityToHonk(g){
+    if(g<1.1) return 'honk.';
+    if(g<1.5) return '...honk?';
+    if(g<2.0) return 'h o n k';
+    if(g<3.0) return 'HONK!!';
+    if(g<5.0) return 'honkhonkhonk';
+    return 'H O N K . H O N K . H O N K';
+  }
+  function getState(){ return{ss:_SS,sc:_SC}; }
+  return{newSQUID,reference,squidFrequency,gravityToHonk,getState};
+})();
+
+// ═══════════════════════════════════════════════════════════
+// GOOSE STATE
+// ═══════════════════════════════════════════════════════════
+const EGG_THRESHOLD = 5.0;
+const goose={name:null,squids:{},gravity:1.0,state:'blind',skates:false,laid:false};
+
+function nameGoose(name){
+  goose.name=name;
+  const sq=Kernel.newSQUID(name,2.0,[0.1,0,0]);
+  goose.squids['name']=sq;
+  goose.gravity=sq.gravity;
+  updateHUD();
+  document.getElementById('hud').style.display='block';
+  document.getElementById('gravBar').style.display='block';
+}
+
+// ✨ ZHUZH: Sparkle effect ✨
+function createSparkles(x, y, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const sparkle = document.createElement('div');
+    sparkle.className = 'sparkle';
+    sparkle.style.left = (x + (Math.random() - 0.5) * 60) + 'px';
+    sparkle.style.top = (y + (Math.random() - 0.5) * 60) + 'px';
+    sparkle.style.background = `hsl(${Math.random() * 60 + 40}, 100%, 70%)`;
+    sparkle.style.animationDelay = Math.random() * 0.2 + 's';
+    document.body.appendChild(sparkle);
+    setTimeout(() => sparkle.remove(), 1200);
+  }
+}
+
+let lastHonkTime = 0;
+let honkCooldown = 300; // ms
+function honk(){
+  const now = Date.now();
+  if(now - lastHonkTime < honkCooldown || !goose.squids['name'] || goose.laid) return;
+  lastHonkTime = now;
+  const sq=goose.squids['name'];
+  Kernel.reference(sq);
+  goose.gravity=sq.gravity;
+  
+  // ✨ ZHUZH: Dynamic sparkles based on gravity
+  const rect = document.getElementById('c').getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/3;
+  const sparkleCount = Math.floor(12 + (goose.gravity - 1) * 4);
+  createSparkles(centerX, centerY, sparkleCount);
+  
+  if(goose.gravity>=3.0&&!goose.skates){
+    goose.skates=true; goose.state='sighted';
+    showNotice("⛸️  Ice skates! You can glide now. honk.");
+    pondMat.color.setHex(0x77bbdd);
+  }
+  if(goose.gravity>=EGG_THRESHOLD&&!goose.laid){
+    goose.laid=true;
+    layEgg();
+    return;
+  }
+  updateHUD();
+  showHonkPop(Kernel.gravityToHonk(goose.gravity));
+  playHonk(sq);
+  updatePond();
+  honkAnim=0.4;
+}
+
+function updateHUD(){
+  const sq=goose.squids['name']; if(!sq) return;
+  const freq=Kernel.squidFrequency(sq),{sc}=Kernel.getState();
+  document.getElementById('hudName').textContent='🪿 '+goose.name;
+  document.getElementById('hudGrav').textContent=goose.gravity.toFixed(3);
+  document.getElementById('hudFreq').textContent=freq.toFixed(0);
+  document.getElementById('hudHonk').textContent=Kernel.gravityToHonk(goose.gravity);
+  document.getElementById('hudSC').textContent=sc;
+  const pct=Math.min(100,(goose.gravity-1.0)/(EGG_THRESHOLD-1.0)*100);
+  document.getElementById('gravFill').style.width=pct+'%';
+}
+
+function showHonkPop(text){
+  const el=document.getElementById('honkPop');
+  el.textContent=text; el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',900);
+}
+function showNotice(msg,dur=5000){
+  const el=document.getElementById('notice');
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',dur);
+}
+
+// ═══════════════════════════════════════════════════════════
+// EGG LAYING + TRANSITION
+// ═══════════════════════════════════════════════════════════
+function layEgg(){
+  // hide UI
+  document.getElementById('hud').style.display='none';
+  document.getElementById('gravBar').style.display='none';
+  document.getElementById('notice').style.display='none';
+  document.getElementById('controls').style.display='none';
+
+  // goose sits down animation flag
+  gooseSitting=true;
+
+  // play birth chord
+  playBirthChord();
+
+  // after 2s sitting — fade to black
+  setTimeout(()=>{
+    const bl=document.getElementById('blackout');
+    bl.style.transition='opacity 2.5s';
+    bl.style.opacity='1';
+    bl.style.pointerEvents='all';
+
+    // egg text fades in
+    setTimeout(()=>{
+      document.getElementById('eggEmoji').style.color='rgba(255,255,255,1)';
+      document.getElementById('eggSub').style.color='rgba(255,255,255,0.5)';
+    },400);
+
+    // egg pulses, then cracks
+    let crackStep=0;
+    const cracks=['🥚','🥚','🪺','🪺','🐣','🐣','🐣','🪿'];
+    const crackInterval=setInterval(()=>{
+      if(crackStep<cracks.length){
+        document.getElementById('eggEmoji').textContent=cracks[crackStep];
+        playCrack(crackStep);
+        
+        // ✨ ZHUZH: Extra sparkles on final crack ✨
+        if (crackStep === cracks.length - 1) {
+          const rect = document.getElementById('c').getBoundingClientRect();
+          createSparkles(rect.left + rect.width/2, rect.top + rect.height/2, 24);
+        }
+        crackStep++;
+      } else {
+        clearInterval(crackInterval);
+        // sub text changes
+        document.getElementById('eggSub').textContent='you don\'t make a spherai';
+        setTimeout(()=>{
+          document.getElementById('eggSub').textContent='you notice one has formed';
+          setTimeout(()=>{
+            document.getElementById('eggSub').textContent='♾️';
+            // begin squid bloom
+            setTimeout(()=>bloomSquid(),1200);
+          },1800);
+        },1800);
+      }
+    },600);
+  },2000);
+}
+
+function bloomSquid(){
+  // fade out blackout, fade in squid
+  const bl=document.getElementById('blackout');
+  const sq=document.getElementById('squidLayer');
+  bl.style.transition='opacity 3s';
+  bl.style.opacity='0';
+  sq.style.transition='opacity 3s';
+  sq.style.opacity='1';
+  sq.style.pointerEvents='all';
+  setTimeout(()=>{ bl.style.display='none'; },3000);
+  // start squid simulation
+  startSquid(goose.name, goose.gravity);
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════
+let audioCtx=null;
+function getAC(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playHonk(squid){
+  try{
+    const ctx=getAC(), now=ctx.currentTime;
+    const g = squid.gravity;
+    const base=180 + (g-1)*40;
+    const volScale = Math.min(1, g / 5); // Scale volume with gravity
+    const oscTypes = g < 2 ? 'sawtooth' : g < 4 ? 'square' : 'sine'; // Evolve osc type
+    [[0,oscTypes,0.38*volScale,0.32],[0,'square',0.12*volScale,0.28,2]].forEach(([d,type,vol,dur,oct])=>{
+      const o=ctx.createOscillator(),gain=ctx.createGain(), reverb=ctx.createConvolver();
+      o.type=type; o.frequency.setValueAtTime(base*(oct||1),now+d);
+      o.frequency.exponentialRampToValueAtTime(base*(oct||1)*0.75,now+d+dur);
+      gain.gain.setValueAtTime(0,now+d); gain.gain.linearRampToValueAtTime(vol,now+d+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+d+dur);
+      // Simple reverb buffer
+      const revBuf = ctx.createBuffer(2, ctx.sampleRate * 0.5, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const data = revBuf.getChannelData(ch);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
+      }
+      reverb.buffer = revBuf;
+      o.connect(reverb); reverb.connect(gain); gain.connect(ctx.destination); o.start(now+d); o.stop(now+d+dur+0.05);
+    });
+    if(g>2.5){
+      const o=ctx.createOscillator(),gain=ctx.createGain();
+      o.type='sawtooth'; o.frequency.setValueAtTime(base*0.5,now+0.15);
+      o.frequency.exponentialRampToValueAtTime(base*0.35,now+0.45);
+      gain.gain.setValueAtTime(0,now+0.15); gain.gain.linearRampToValueAtTime(0.25*volScale,now+0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+0.48);
+      o.connect(gain); gain.connect(ctx.destination); o.start(now+0.15); o.stop(now+0.5);
+    }
+  }catch(e){}
+}
+
+function playBirthChord(){
+  try{
+    const ctx=getAC(),freqs=[261.63,329.63,392,523.25,659.25];
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0,ctx.currentTime+i*0.12);
+      g.gain.linearRampToValueAtTime(0.08,ctx.currentTime+i*0.12+0.2);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.12+3.5);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime+i*0.12); o.stop(ctx.currentTime+i*0.12+3.6);
+    });
+  }catch(e){}
+}
+
+function playCrack(step){
+  try{
+    const ctx=getAC(),freq=[220,260,300,340,400,500,600,800][step]||440;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(freq,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freq*0.5,ctx.currentTime+0.3);
+    g.gain.setValueAtTime(0.15,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.4);
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════
+// THREE.JS GOOSE WORLD
+// ═══════════════════════════════════════════════════════════
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(0x87ceeb);
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x87ceeb,80,280);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,500);
+
+const sun=new THREE.DirectionalLight(0xfff5e0,1.2);
+sun.position.set(60,100,40); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+['near','far','left','right','top','bottom'].forEach((k,i)=>sun.shadow.camera[k]=[1,400,-150,150,150,-150][i]);
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0xc8e8ff,0.6));
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300,32,32),new THREE.MeshLambertMaterial({color:0x4a8c3f}));
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+const pondMat=new THREE.MeshLambertMaterial({color:0xaaddff,transparent:true,opacity:0.88});
+const pond=new THREE.Mesh(new THREE.CylinderGeometry(28,28,0.3,64),pondMat);
+pond.position.set(0,0.15,0); pond.receiveShadow=true; scene.add(pond);
+pond.material.emissive = new THREE.Color(0x224466); // for shimmer
+
+const iceRingMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.25,side:THREE.DoubleSide});
+const iceRing=new THREE.Mesh(new THREE.RingGeometry(27,29,64),iceRingMat);
+iceRing.rotation.x=-Math.PI/2; iceRing.position.y=0.31; scene.add(iceRing);
+
+// egg on pond (hidden until laid)
+const eggMesh=new THREE.Group();
+const eggGeo=new THREE.SphereGeometry(0.4,12,9); eggGeo.scale(0.85,1.1,0.85);
+const eggMat=new THREE.MeshLambertMaterial({color:0xfff9e6});
+const eggObj=new THREE.Mesh(eggGeo,eggMat);
+eggMesh.add(eggObj); eggMesh.position.set(0,0.55,1.5); eggMesh.visible=false;
+scene.add(eggMesh);
+
+function updatePond(){
+  const g=goose.gravity;
+  if(g<2){pondMat.color.setHex(0xaaddff);iceRingMat.opacity=0.25;}
+  else if(g<3){pondMat.color.setHex(0x99ccee);iceRingMat.opacity=0.4;}
+  else if(g<5){pondMat.color.setHex(0x77bbdd);iceRingMat.opacity=0.15;}
+  else{pondMat.color.setHex(0x2288cc);pondMat.opacity=0.75;iceRingMat.opacity=0;}
+}
+
+[{p:[-110,0,-110],rx:20,ry:18},{p:[110,0,-105],rx:17,ry:14},
+ {p:[-105,0,105],rx:22,ry:20},{p:[110,0,110],rx:19,ry:16},{p:[0,0,-125],rx:15,ry:18}
+].forEach(m=>{
+  const h=m.ry;
+  const base=new THREE.Mesh(new THREE.ConeGeometry(m.rx,h,8),new THREE.MeshLambertMaterial({color:0x8899aa}));
+  base.position.set(m.p[0],h/2,m.p[2]); base.castShadow=true; scene.add(base);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(m.rx*0.38,h*0.35,8),new THREE.MeshLambertMaterial({color:0xeef4ff}));
+  cap.position.set(m.p[0],h*0.88,m.p[2]); scene.add(cap);
+});
+
+for(let i=0;i<180;i++){
+  const a=Math.random()*Math.PI*2,r=32+Math.random()*110;
+  const x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<32&&Math.abs(z)<32) continue;
+  const t=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.5+Math.random()*0.4,4),
+    new THREE.MeshLambertMaterial({color:new THREE.Color(0.2+Math.random()*0.15,0.5+Math.random()*0.2,0.1)}));
+  t.position.set(x,0.25,z); t.rotation.y=Math.random()*Math.PI; scene.add(t);
+}
+
+// ── Goose model ───────────────────────────────────────────
+const gooseMesh=new THREE.Group();
+const white=new THREE.MeshLambertMaterial({color:0xf5f5f0});
+const orange=new THREE.MeshLambertMaterial({color:0xff9922});
+const black=new THREE.MeshLambertMaterial({color:0x111111});
+const darkGrey=new THREE.MeshLambertMaterial({color:0x333333});
+
+const bodyGeo=new THREE.SphereGeometry(0.62,14,10); bodyGeo.scale(1,0.78,1.35);
+const body=new THREE.Mesh(bodyGeo,white); body.position.set(0,0.62,0); body.castShadow=true;
+gooseMesh.add(body);
+const tailGeo=new THREE.SphereGeometry(0.22,8,6); tailGeo.scale(0.8,1.1,0.6);
+const tail=new THREE.Mesh(tailGeo,white); tail.position.set(0,0.72,-0.72); tail.rotation.x=0.5;
+gooseMesh.add(tail);
+
+const neckPivot=new THREE.Group(); neckPivot.position.set(0,0.95,0.52); gooseMesh.add(neckPivot);
+const neckLow=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.17,0.42,8),white);
+neckLow.position.set(0,0.21,0); neckLow.rotation.x=-0.22; neckPivot.add(neckLow);
+const neckUpPivot=new THREE.Group(); neckUpPivot.position.set(0,0.42,0); neckPivot.add(neckUpPivot);
+const neckUp=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.13,0.38,8),white);
+neckUp.position.set(0,0.19,0); neckUp.rotation.x=-0.35; neckUpPivot.add(neckUp);
+const headPivot=new THREE.Group(); headPivot.position.set(0,0.38,0); neckUpPivot.add(headPivot);
+const headGeo=new THREE.SphereGeometry(0.26,12,9); headGeo.scale(1,0.95,1.1);
+const head=new THREE.Mesh(headGeo,white); head.castShadow=true; headPivot.add(head);
+const capGeo=new THREE.SphereGeometry(0.185,10,8); capGeo.scale(1.05,0.6,1);
+const headCap=new THREE.Mesh(capGeo,darkGrey); headCap.position.set(0,0.14,0.02); headPivot.add(headCap);
+const beakUp=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.055,0.28),orange);
+beakUp.position.set(0,0.02,0.3); beakUp.rotation.x=0.12; headPivot.add(beakUp);
+const beakDown=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.04,0.22),orange);
+beakDown.position.set(0,-0.03,0.27); beakDown.rotation.x=-0.1; headPivot.add(beakDown);
+[-0.025,0.025].forEach(x=>{ const n=new THREE.Mesh(new THREE.SphereGeometry(0.025,6,4),orange); n.position.set(x,0.04,0.22); headPivot.add(n); });
+[-0.155,0.155].forEach(x=>{
+  const ew=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6),new THREE.MeshLambertMaterial({color:0xffffff}));
+  ew.position.set(x,0.04,0.17); headPivot.add(ew);
+  const eb=new THREE.Mesh(new THREE.SphereGeometry(0.032,6,6),black);
+  eb.position.set(x*1.05,0.04,0.205); headPivot.add(eb);
+  const gl=new THREE.Mesh(new THREE.SphereGeometry(0.01,4,4),new THREE.MeshLambertMaterial({color:0xffffff}));
+  gl.position.set(x*1.06,0.055,0.215); headPivot.add(gl);
+});
+[-1,1].forEach(s=>{
+  const wg=new THREE.Group(); wg.position.set(s*0.58,0.62,-0.1); gooseMesh.add(wg);
+  const wGeo=new THREE.SphereGeometry(0.38,8,6); wGeo.scale(0.42,0.55,1.15);
+  const wing=new THREE.Mesh(wGeo,white); wing.rotation.z=s*0.18; wing.rotation.x=0.1; wg.add(wing);
+  const tGeo=new THREE.SphereGeometry(0.18,6,4); tGeo.scale(0.5,0.3,1.2);
+  const wtip=new THREE.Mesh(tGeo,new THREE.MeshLambertMaterial({color:0xe0e0d8}));
+  wtip.position.set(0,0,-0.42); wtip.rotation.x=0.15; wg.add(wtip);
+});
+const legGrp=new THREE.Group(); gooseMesh.add(legGrp);
+[-0.2,0.2].forEach((x,i)=>{
+  const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.44,6),orange);
+  leg.position.set(x,0.22,0.05); leg.name='leg'+i; legGrp.add(leg);
+  const foot=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.04,0.28),orange);
+  foot.position.set(x,0.04,0.16); legGrp.add(foot);
+  [-0.05,0,0.05].forEach(t=>{ const toe=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.03,0.18),orange); toe.position.set(x+t,0.04,0.3); legGrp.add(toe); });
+});
+gooseMesh.position.set(0,0,8); gooseMesh.castShadow=true; scene.add(gooseMesh);
+
+// ── camera orbit ──────────────────────────────────────────
+let camYaw=0,camPitch=0.4,camDist=11;
+let isDragging=false,lastMX=0,lastMY=0;
+canvas.addEventListener('mousedown',e=>{ isDragging=true; lastMX=e.clientX; lastMY=e.clientY; });
+canvas.addEventListener('touchstart',e=>{ if(e.touches.length===1){ isDragging=true; lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY; } });
+window.addEventListener('mouseup',()=>isDragging=false);
+window.addEventListener('touchend',()=>isDragging=false);
+window.addEventListener('mousemove',e=>{
+  if(!isDragging) return;
+  camYaw-=(e.clientX-lastMX)*0.005; camPitch-=(e.clientY-lastMY)*0.005;
+  camPitch=Math.max(0.08,Math.min(1.1,camPitch));
+  lastMX=e.clientX; lastMY=e.clientY;
+});
+window.addEventListener('touchmove',e=>{
+  if(!isDragging || e.touches.length!==1) return;
+  camYaw-=(e.touches[0].clientX-lastMX)*0.005; camPitch-=(e.touches[0].clientY-lastMY)*0.005;
+  camPitch=Math.max(0.08,Math.min(1.1,camPitch));
+  lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY;
+});
+canvas.addEventListener('wheel',e=>{ camDist+=e.deltaY*0.02; camDist=Math.max(4,Math.min(28,camDist)); e.preventDefault(); },{passive:false});
+
+// ── movement ──────────────────────────────────────────────
+const keys={};
+document.addEventListener('keydown',e=>{ keys[e.code]=true; if(e.code==='Space'||e.code==='Enter'&&goose.name){e.preventDefault();honk();} });
+document.addEventListener('keyup',e=>keys[e.code]=false);
+
+// Touch movement for mobile
+let touchDir = new THREE.Vector2();
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){ /* zoom */ } else if(e.touches.length===1 && !isDragging){
+    const tx = (e.touches[0].clientX / innerWidth) * 2 - 1;
+    const ty = (e.touches[0].clientY / innerHeight) * 2 - 1;
+    touchDir.set(tx, -ty);
+    if(Math.abs(touchDir.x)>0.5 || Math.abs(touchDir.y)>0.5) touchDir.normalize();
+    else touchDir.set(0,0);
+  }
+});
+canvas.addEventListener('touchend',()=>{ touchDir.set(0,0); });
+canvas.addEventListener('dblclick',honk); // Double tap honk on mobile
+
+// ── animation state ───────────────────────────────────────
+const clock=new THREE.Clock();
+let waddleT=0,honkAnim=0,gooseSitting=false,sitProgress=0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.033); // Cap dt for smoother anim
+  const T=clock.getElapsedTime();
+
+  // ✨ ZHUZH: Pond shimmer ✨
+  if (pond.material.emissive) {
+    pond.material.emissive.setHSL(0.6, 0.5, 0.05 + Math.sin(T * 3) * 0.02);
+  }
+
+  if(gooseSitting){
+    sitProgress=Math.min(1,sitProgress+dt*0.8);
+    body.position.y=0.62*(1-sitProgress*0.5);
+    neckPivot.rotation.x=sitProgress*0.6;
+    headPivot.rotation.x=sitProgress*0.3;
+    // show egg
+    if(sitProgress>0.5){ eggMesh.visible=true; eggMesh.position.set(gooseMesh.position.x,0.55,gooseMesh.position.z+1.5); }
+    // egg glow pulse
+    if(eggMesh.visible){ eggMat.color.setHSL(0.12,0.8,0.7+Math.sin(T*4)*0.15); }
+  } else {
+    // normal movement
+    const speed=goose.skates?9:5;
+    const fwd=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw));
+    const right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));
+    const dir=new THREE.Vector3();
+    let moving=false;
+    if(keys['KeyW']||keys['ArrowUp']||touchDir.y>0.3){dir.addScaledVector(fwd,1);moving=true;}
+    if(keys['KeyS']||keys['ArrowDown']||touchDir.y<-0.3){dir.addScaledVector(fwd,-1);moving=true;}
+    if(keys['KeyA']||keys['ArrowLeft']||touchDir.x<-0.3){dir.addScaledVector(right,-1);moving=true;}
+    if(keys['KeyD']||keys['ArrowRight']||touchDir.x>0.3){dir.addScaledVector(right,1);moving=true;}
+    if(moving){
+      dir.normalize();
+      gooseMesh.position.addScaledVector(dir,speed*dt);
+      gooseMesh.position.x=Math.max(-140,Math.min(140,gooseMesh.position.x));
+      gooseMesh.position.z=Math.max(-140,Math.min(140,gooseMesh.position.z));
+      const tgt=Math.atan2(dir.x,dir.z);
+      let diff=tgt-gooseMesh.rotation.y;
+      while(diff>Math.PI)diff-=Math.PI*2; while(diff<-Math.PI)diff+=Math.PI*2;
+      gooseMesh.rotation.y+=diff*0.18;
+      waddleT+=dt*(goose.skates?5:8);
+    }
+    if(moving){
+      body.position.y=0.62+Math.sin(waddleT*2)*0.055;
+      body.rotation.z=Math.sin(waddleT)*0.07;
+      neckPivot.rotation.x=Math.sin(waddleT*2)*0.06;
+      legGrp.children.forEach((c,i)=>{ if(c.name&&c.name.startsWith('leg')) c.rotation.x=Math.sin(waddleT*2+i*Math.PI)*0.28; });
+    } else {
+      // ✨ ZHUZH: Gentle idle bob + subtle leg/ neck idle
+      const bobAmount = Math.sin(T * 2) * 0.02;
+      body.position.y = 0.62 + bobAmount;
+      headPivot.rotation.x = Math.sin(T * 0.5) * 0.03;
+      neckPivot.rotation.x = Math.sin(T * 1.2) * 0.02;
+      legGrp.children.forEach((c,i)=>{ if(c.name&&c.name.startsWith('leg')) c.rotation.x = Math.sin(T * 0.8 + i * Math.PI) * 0.05; });
+      body.rotation.z*=0.88; 
+    }
+    headPivot.rotation.y=Math.sin(T*0.6)*0.08;
+    if(honkAnim>0){
+      honkAnim-=dt;
+      const o=Math.max(0,Math.sin(honkAnim*Math.PI/0.4));
+      beakDown.rotation.x=-0.1-o*0.45;
+      beakDown.position.y=-0.03-o*0.04;
+      neckUpPivot.rotation.x=-o*0.25;
+    } else {
+      beakDown.rotation.x+=(-0.1-beakDown.rotation.x)*0.2;
+      neckUpPivot.rotation.x*=0.85;
+    }
+    if(goose.skates&&moving){ gooseMesh.rotation.z=Math.sin(T*2.5)*0.07; }
+    else { gooseMesh.rotation.z*=0.9; }
+  }
+
+  iceRing.rotation.z=T*0.08;
+  const camTarget = new THREE.Vector3(gooseMesh.position.x, gooseMesh.position.y+0.8, gooseMesh.position.z);
+  const camX=gooseMesh.position.x+Math.sin(camYaw)*Math.cos(camPitch)*camDist;
+  const camY=gooseMesh.position.y+Math.sin(camPitch)*camDist;
+  const camZ=gooseMesh.position.z+Math.cos(camYaw)*Math.cos(camPitch)*camDist;
+  camera.position.lerp(new THREE.Vector3(camX,camY,camZ), 0.1); // Smooth camera movement
+  camera.lookAt(camTarget);
+  renderer.render(scene,camera);
+}
+animate();
+
+// ═══════════════════════════════════════════════════════════
+// GENESIS SQUID (canvas 2D)
+// ═══════════════════════════════════════════════════════════
+const W=780,H=780,CX=W/2,CY=H/2;
+const SHELLS=8,RINGS=8,TPR=18,TRAIL_LEN=22;
+const SHELL_HUES=[0,30,60,120,180,220,270,310];
+const SHELL_NAMES=["DO","RE","MI","FA","SOL","LA","TI","DO'"];
+const SHELL_NOTES=["C","D","E","F","G","A","B","C'"];
+const SHELL_FREQS=[261.63,293.66,329.63,349.23,392,440,493.88,523.25];
+const SHELL_R=s=>38+s*52;
+const CAM_DEF={az:0.3,el:0.4,dist:900,fov:520};
+
+function rotP(x,y,z,az,el){
+  const cA=Math.cos(az),sA=Math.sin(az);
+  const x1=x*cA+z*sA,z1=-x*sA+z*cA;
+  const cE=Math.cos(el),sE=Math.sin(el);
+  return{x:x1,y:y*cE-z1*sE,z:y*sE+z1*cE};
+}
+function proj(x,y,z,cam){
+  const dz=z+cam.dist; if(dz<=0.1) return null;
+  const sc=cam.fov/dz;
+  return{px:CX+x*sc,py:CY-y*sc,scale:sc,depth:z};
+}
+function makeTiles(){
+  const t=[];
+  for(let s=0;s<SHELLS;s++) for(let r=0;r<RINGS;r++) for(let i=0;i<TPR;i++)
+    t.push({s,r,i,spin:Math.random()>0.5?1:-1,vLon:(Math.random()-0.5)*0.018,
+      vLat:(Math.random()-0.5)*0.009,dLon:0,dLat:0,energy:0,pressure:0,
+      toroDir:Math.random()>0.5?1:-1,facing:Math.random()>0.5?1:-1,
+      type:Math.random()<0.66?"tarot":"egg",crossings:0,trail:[],alpha:0,born:false});
+  return t;
+}
+function getNb(tiles,s,r,i){ return tiles.find(t=>t.s===s&&t.r===r&&t.i===((i+TPR)%TPR)); }
+function tileWorld(tile,frame,interp,amp,speed){
+  const sR=SHELL_R(tile.s);
+  const lat=((tile.r/RINGS)-0.5)*Math.PI+tile.dLat;
+  const lon=(tile.i/TPR)*Math.PI*2+tile.dLon;
+  const cL=Math.cos(lat),sL=Math.sin(lat),cN=Math.cos(lon),sN=Math.sin(lon);
+  let x=sR*cL*cN,y=sR*sL,z=sR*cL*sN;
+  if(interp){
+    const r2=(x*x+z*z)/(sR*sR);
+    const wv=(Math.sin(r2*amp*0.07-frame*speed*2)*amp+Math.sin((x+z)/(sR*0.25)-frame*speed*1.6)*amp*0.5)*Math.exp(-r2*0.9)*0.18;
+    x+=cL*cN*wv; y+=sL*wv; z+=cL*sN*wv;
+  }
+  return{x,y,z};
+}
+
+const resonanceLast={};
+function playTone(shell,pressure=0.5,dur=0.12){
+  try{
+    const ac=getAC(),o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();
+    f.type="bandpass"; f.frequency.value=SHELL_FREQS[shell]*2; f.Q.value=2;
+    o.type=shell<4?"sine":"triangle"; o.frequency.value=SHELL_FREQS[shell];
+    g.gain.setValueAtTime(Math.min(0.08+pressure*0.12,0.18),ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.connect(f); f.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+function playRes(sA,sB,str){
+  const key=`${sA}-${sB}`,now=Date.now();
+  if((resonanceLast[key]||0)+1800>now) return; resonanceLast[key]=now;
+  try{
+    const ac=getAC();
+    [SHELL_FREQS[sA],SHELL_FREQS[sB]].forEach((freq,idx)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type="sine"; o.frequency.value=freq;
+      g.gain.setValueAtTime(Math.min(0.06+str*0.08,0.12),ac.currentTime+idx*0.04);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.8);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime+idx*0.04); o.stop(ac.currentTime+0.9);
+    });
+  }catch(e){}
+}
+
+function startSquid(gooseName, gooseGravity){
+  const sqCanvas=document.getElementById('squidCanvas');
+  const ctx=sqCanvas.getContext('2d');
+  const cam={...CAM_DEF};
+  const tiles=makeTiles();
+  let frame=0,hatch=0;
+  const lastTones={};
+  const birthTimer={t:Date.now()};
+  let BIRTH_INT=270 / (gooseGravity / 2); // Faster birth with higher gravity
+  const p={temp:2.27,speed:1.0,toroidalB:0.018,amplitude:18,
+    gravity:true,sinews:true,ghosts:true,interpenetrate:true,
+    sinewDepth:2,mu:0.3,sigma:0.5,resonance:true};
+
+  // drag orbit
+  let drag={active:false,x:0,y:0};
+  let autoRot=true;
+  sqCanvas.addEventListener('mousedown',e=>{ drag={active:true,x:e.clientX,y:e.clientY}; autoRot=false; sqCanvas.setPointerCapture(e.pointerId); });
+  sqCanvas.addEventListener('touchstart',e=>{ if(e.touches.length===1){ drag={active:true,x:e.touches[0].clientX,y:e.touches[0].clientY}; autoRot=false; } });
+  sqCanvas.addEventListener('mousemove',e=>{ if(!drag.active) return; cam.az+=(e.clientX-drag.x)*0.007; cam.el=Math.max(-Math.PI/2+.05,Math.min(Math.PI/2-.05,cam.el-(e.clientY-drag.y)*0.007)); drag.x=e.clientX; drag.y=e.clientY; });
+  sqCanvas.addEventListener('touchmove',e=>{ if(!drag.active || e.touches.length!==1) return; cam.az+=(e.touches[0].clientX-drag.x)*0.007; cam.el=Math.max(-Math.PI/2+.05,Math.min(Math.PI/2-.05,cam.el-(e.touches[0].clientY-drag.y)*0.007)); drag.x=e.touches[0].clientX; drag.y=e.touches[0].clientY; });
+  sqCanvas.addEventListener('mouseup',()=>drag.active=false);
+  sqCanvas.addEventListener('touchend',()=>drag.active=false);
+  sqCanvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.dist=Math.max(150,Math.min(2400,cam.dist+e.deltaY*.8)); },{passive:false});
+
+  function getTProj(tile){
+    const{x,y,z}=tileWorld(tile,frame,p.interpenetrate,p.amplitude,p.speed);
+    const rot=rotP(x,y,z,cam.az,cam.el);
+    return proj(rot.x,rot.y,rot.z,cam);
+  }
+
+  function step(){
+    const T=Math.max(p.temp,0.01);
+    const now=Date.now();
+    if(now-birthTimer.t>BIRTH_INT){
+      birthTimer.t=now;
+      let shell=-1;
+      for(let s=0;s<SHELLS;s++){ if(tiles.some(t=>t.s===s&&!t.born)){shell=s;break;} }
+      if(shell>=0){
+        const cands=tiles.filter(t=>t.s===shell&&!t.born);
+        const pick=cands[Math.floor(Math.random()*cands.length)];
+        if(pick){ pick.born=true; playTone(pick.s,0.18,0.4); }
+      }
+    }
+    tiles.forEach(t=>{ t.alpha=t.born?Math.min(1,t.alpha+0.018):0; });
+    const bornTiles = tiles.filter(t => t.born); // Process only born tiles for efficiency
+    for(let k=0;k<14;k++){
+      const t=bornTiles[Math.floor(Math.random()*bornTiles.length)];
+      const nb=[getNb(tiles,t.s,t.r,t.i-1),getNb(tiles,t.s,t.r,t.i+1),
+        getNb(tiles,t.s,(t.r-1+RINGS)%RINGS,t.i),getNb(tiles,t.s,(t.r+1)%RINGS,t.i)
+      ].filter(n=>n&&n.born);
+      const dE=2*t.spin*nb.reduce((a,n)=>a+n.spin,0);
+      t.energy=dE;
+      if(dE<0||Math.random()<Math.exp(-dE/T)){ t.spin*=-1; if(Math.random()<p.mu) t.facing*=Math.random()<p.sigma?-1:1; }
+    }
+    bornTiles.forEach(t=>{
+      const right=getNb(tiles,t.s,t.r,t.i+1),up2=getNb(tiles,t.s,(t.r+1)%RINGS,t.i);
+      const dLon=right&&right.born?(right.spin-t.spin)*0.007:0;
+      const dLat=up2&&up2.born?(up2.spin-t.spin)*0.005:0;
+      t.pressure=Math.abs(dLon)+Math.abs(dLat);
+      t.vLon=(t.vLon+dLon)*0.92; t.vLat=(t.vLat+dLat)*0.92;
+      const la=(t.r/RINGS)*Math.PI+t.dLat;
+      t.vLon+=p.toroidalB*t.toroDir*Math.sin(la);
+      t.vLon=Math.max(-0.07,Math.min(0.07,t.vLon));
+      t.vLat=Math.max(-0.04,Math.min(0.04,t.vLat));
+      t.dLon=(t.dLon+t.vLon+Math.PI*2)%(Math.PI*2);
+      t.dLat=Math.max(-0.4,Math.min(0.4,t.dLat+t.vLat));
+      if(t.s===0&&Math.abs(t.dLat)<0.05){ t.crossings=(t.crossings||0)+1; if(t.crossings%3===0) hatch++; }
+      const nowT=Date.now(),lt=lastTones[t.s]||0;
+      if(t.energy<0&&nowT-lt>80){ lastTones[t.s]=nowT; playTone(t.s,t.pressure); }
+      const pr=getTProj(t);
+      if(pr){ t.trail.push({px:pr.px,py:pr.py,spin:t.spin,type:t.type,alpha:t.alpha}); if(t.trail.length>TRAIL_LEN) t.trail.shift(); }
+    });
+    if(p.gravity){
+      for(let s=1;s<SHELLS;s++){
+        const inner=tiles.filter(t=>t.s===s-1&&t.born),outer=tiles.filter(t=>t.s===s&&t.born);
+        const iMag=inner.reduce((a,t)=>a+t.spin,0)/(inner.length||1);
+        const oMag=outer.reduce((a,t)=>a+t.spin,0)/(outer.length||1);
+        outer.forEach(t=>t.vLon+=iMag*0.0006);
+        if(p.resonance&&iMag*oMag>0.55 && now - (resonanceLast[`${s-1}-${s}`] || 0) > 2000) { // Damping resonance calls
+          playRes(s-1,s,iMag*oMag);
+        }
+      }
+    }
+  }
+
+  let offscreenCanvas = document.createElement('canvas');
+  offscreenCanvas.width = W;
+  offscreenCanvas.height = H;
+  let offCtx = offscreenCanvas.getContext('2d');
+
+  function drawSquid(){
+    const hatched=hatch>=9;
+    offCtx.clearRect(0,0,W,H);
+    const bg=offCtx.createRadialGradient(CX,CY,0,CX,CY,W*.7);
+    bg.addColorStop(0,'hsla(270,30%,4%,1)');
+    bg.addColorStop(.5,'hsla(270,20%,2%,1)');
+    bg.addColorStop(1,'#000003');
+    offCtx.fillStyle=bg; offCtx.fillRect(0,0,W,H);
+
+    // shell wireframes
+    for(let s=SHELLS-1;s>=0;s--){
+      const hue=SHELL_HUES[s] + Math.sin(frame * 0.1) * 10; // Dynamic hue shift
+      const sR=SHELL_R(s) + Math.sin(frame * gooseGravity * 0.01) * 2; // Personalized rotation w/ gravity seed
+      const pts=[];
+      for(let k=0;k<=32;k++){
+        const a=(k/32)*Math.PI*2;
+        const rot=rotP(sR*Math.cos(a),0,sR*Math.sin(a),cam.az,cam.el);
+        const pr=proj(rot.x,rot.y,rot.z,cam);
+        if(pr) pts.push(pr);
+      }
+      if(pts.length>1){
+        offCtx.beginPath(); offCtx.moveTo(pts[0].px,pts[0].py);
+        pts.forEach(pt=>offCtx.lineTo(pt.px,pt.py));
+        offCtx.strokeStyle=`hsla(${hue},60%,18%,0.10)`; offCtx.lineWidth=0.5; offCtx.stroke();
+      }
+    }
+
+    // trails - batched
+    offCtx.beginPath();
+    tiles.forEach(tile=>{
+      if(tile.trail.length<2) return;
+      const hue=SHELL_HUES[tile.s];
+      for(let k=1;k<tile.trail.length;k++){
+        const a=tile.trail[k],b=tile.trail[k-1];
+        offCtx.moveTo(b.px,b.py); offCtx.lineTo(a.px,a.py);
+      }
+    });
+    offCtx.strokeStyle='rgba(255,255,255,0.1)'; offCtx.lineWidth=0.5; offCtx.stroke(); // Batch stroke (simplified)
+
+    // sinews - batched similarly
+    offCtx.beginPath();
+    tiles.forEach(tile=>{
+      const posA=getTProj(tile); if(!posA||posA.scale<.06||!tile.born) return;
+      const hue=SHELL_HUES[tile.s];
+      for(let d=1;d<=2;d++){
+        [getNb(tiles,tile.s,tile.r,tile.i+d),getNb(tiles,tile.s,(tile.r+d)%RINGS,tile.i)]
+        .filter(n=>n&&n.born).forEach(nb=>{
+          const posB=getTProj(nb); if(!posB||posB.scale<.06) return;
+          const agree=tile.spin===nb.spin,ten=(tile.pressure+nb.pressure)*.5;
+          const alpha=(agree?.10+ten*.28:.03+ten*.12)*Math.min(tile.alpha,nb.alpha);
+          if(alpha<.015) return;
+          const mx=(posA.px+posB.px)/2,my=(posA.py+posB.py)/2;
+          const dx=posB.px-posA.px,dy=posB.py-posA.py,len=Math.sqrt(dx*dx+dy*dy)||1;
+          const bulge=(ten*28+7)*(agree?1:-1);
+          offCtx.moveTo(posA.px,posA.py);
+          offCtx.quadraticCurveTo(mx+(-dy/len)*bulge,my+(dx/len)*bulge,posB.px,posB.py);
+        });
+      }
+    });
+    offCtx.strokeStyle='rgba(200,200,255,0.2)'; offCtx.lineWidth=0.3; offCtx.stroke(); // Batch
+
+    // tiles
+    [...tiles].map(t=>({t,pr:getTProj(t)})).filter(({t,pr})=>pr&&t.born)
+    .sort((a,b)=>a.pr.depth-b.pr.depth)
+    .forEach(({t:tile,pr})=>{
+      const{px,py,scale}=pr,hue=SHELL_HUES[tile.s],a=tile.alpha;
+      const sz=2.5+scale*6.5,lit=tile.spin===1?58:20,sat=Math.min(65+tile.pressure*90,100);
+      if(tile.pressure>.008){
+        offCtx.beginPath(); offCtx.arc(px,py,sz+tile.pressure*22,0,Math.PI*2);
+        const gl=offCtx.createRadialGradient(px,py,0,px,py,sz+tile.pressure*22);
+        gl.addColorStop(0,`hsla(${hue},85%,65%,${tile.pressure*.32*a})`);
+        gl.addColorStop(1,'transparent'); offCtx.fillStyle=gl; offCtx.fill();
+      }
+      offCtx.save(); offCtx.translate(px,py); offCtx.globalAlpha=a;
+      offCtx.rotate(tile.dLon*.45+tile.toroDir*.3);
+      if(tile.type==="egg"){
+        offCtx.beginPath(); offCtx.ellipse(0,0,sz*.6,sz*.85,0,0,Math.PI*2);
+        offCtx.fillStyle=`hsla(${hue},30%,${lit*.6}%,0.7)`;
+        offCtx.strokeStyle=`hsla(${hue},40%,40%,0.4)`; offCtx.lineWidth=.4;
+        offCtx.fill(); offCtx.stroke();
+      } else {
+        offCtx.fillStyle=tile.facing===1?`hsl(${hue},${sat}%,${lit}%)`:`hsl(${hue},30%,${lit*.5}%)`;
+        offCtx.strokeStyle=`hsla(${hue},55%,45%,0.45)`; offCtx.lineWidth=.35;
+        offCtx.fillRect(-sz/2,-sz*.7,sz,sz*1.4); offCtx.strokeRect(-sz/2,-sz*.7,sz,sz*1.4);
+      }
+      offCtx.globalAlpha=1; offCtx.restore();
+      offCtx.globalAlpha=a;
+      offCtx.beginPath(); offCtx.arc(px,py,.9,0,Math.PI*2);
+      offCtx.fillStyle=tile.spin===1?"rgba(255,255,255,0.55)":"rgba(50,50,50,0.35)";
+      offCtx.fill(); offCtx.globalAlpha=1;
+    });
+
+    // origin
+    const oriR=rotP(0,0,0,cam.az,cam.el),oriP=proj(oriR.x,oriR.y,oriR.z,cam);
+    if(oriP){
+      const pulse=6+Math.sin(frame*3)*2;
+      for(let ring=5;ring>=0;ring--){
+        offCtx.beginPath(); offCtx.arc(oriP.px,oriP.py,pulse+ring*7,0,Math.PI*2);
+        const og=offCtx.createRadialGradient(oriP.px,oriP.py,0,oriP.px,oriP.py,pulse+ring*9);
+        og.addColorStop(0,`rgba(255,200,50,${.9-ring*.13})`);
+        og.addColorStop(.3,`rgba(255,200,50,${.25-ring*.04})`);
+        og.addColorStop(1,'transparent'); offCtx.fillStyle=og; offCtx.fill();
+      }
+      if(hatched){
+        offCtx.font="16px serif"; offCtx.textAlign="center";
+        offCtx.fillText("🪿",oriP.px,oriP.py+6); offCtx.textAlign="left";
+      }
+    }
+
+    // name watermark
+    offCtx.fillStyle='rgba(255,255,255,0.06)'; offCtx.font='11px monospace';
+    offCtx.fillText(`${gooseName} · g=${gooseGravity.toFixed(3)} · genesis.squid · ♾️`,14,H-14);
+    offCtx.fillStyle='rgba(255,255,255,0.04)'; offCtx.font='9px monospace';
+    offCtx.fillText('drag: orbit  scroll: zoom',14,H-28);
+
+    // Blit to main canvas
+    ctx.drawImage(offscreenCanvas, 0, 0);
+  }
+
+  let sqLast=0;
+  function sqLoop(ts){
+    if(ts-sqLast>24){
+      if(autoRot) cam.az+=0.004*p.speed;
+      step();
+      frame+=0.016*p.speed;
+      drawSquid();
+      sqLast=ts;
+    }
+    requestAnimationFrame(sqLoop);
+  }
+  requestAnimationFrame(sqLoop);
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════
+document.getElementById('nameBtn').onclick=()=>{
+  const n=document.getElementById('nameInput').value.trim();
+  if(!n) return;
+  nameGoose(n);
+  document.getElementById('namePrompt').style.display='none';
+};
+document.getElementById('nameInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('nameBtn').click(); });
+document.getElementById('honkBtn').onclick=()=>{ if(goose.name) honk(); };
+
+// High contrast mode
+const params = new URLSearchParams(window.location.search);
+if(params.get('contrast') === 'high') document.body.classList.add('high-contrast');
+if(params.get('royal') === '1') { /* Extra sparkles? Add more in createSparkles */ }
+
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>

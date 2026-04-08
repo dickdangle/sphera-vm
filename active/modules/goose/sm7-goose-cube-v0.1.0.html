@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SM7 Goose Cube v0.1.0</title>
+    <link rel="stylesheet" href="./sm7-goose-cube-v0.1.0.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="app-shell" id="appShell" tabindex="0" aria-label="SM7 Goose Cube v0.1.0">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">SM7 / GOOSE CUBE / v0.1.0</p>
+            <h1>One seed, all voxels</h1>
+            <p class="hero-copy">
+              Edit a fully resolved 64 x 246 x 246 goose cube in the grid, craft local recipes into deeper sheets, then inspect the same SM7-filled body in the voxel hatch view.
+            </p>
+          </div>
+          <div class="top-actions">
+            <button id="toggleSimBtn" type="button">Start ising</button>
+            <button id="toggleSpinBtn" type="button">Auto spin on</button>
+            <button id="honkBtn" type="button">Honk stamp</button>
+            <button id="reseedBtn" type="button">Reseed</button>
+            <button id="exportCsvBtn" type="button">Export CSV</button>
+            <button id="importCsvBtn" type="button">Import CSV</button>
+          </div>
+        </header>
+
+        <section class="meta-strip" aria-label="Cube status">
+          <span id="seedReadout">seed: --</span>
+          <span id="depthReadout">depth: 0 / 64</span>
+          <span id="memoryReadout">memory: 0 cells</span>
+          <span id="formulaReadout">formulas: 0</span>
+          <span id="viewerMetaReadout">viewer: 0 voxels</span>
+        </section>
+
+        <section class="workspace">
+          <section class="grid-panel">
+            <section class="formula-bar">
+              <label class="coord-pill" id="cellCoord" for="formulaInput">A1</label>
+              <input
+                id="formulaInput"
+                type="text"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="SM7 char or formula like =S2.A1"
+              />
+            </section>
+
+            <section class="sheet-strip">
+              <div id="sheetButtons" class="sheet-buttons" aria-label="Sheet buttons"></div>
+              <form id="jumpForm" class="jump-form">
+                <label for="jumpInput">Go to</label>
+                <input id="jumpInput" type="number" min="1" max="64" inputmode="numeric" />
+              </form>
+            </section>
+
+            <section class="grid-shell">
+              <div class="grid-wrap">
+                <table id="sheetGrid" class="sheet-grid" aria-label="SM7 grid editor"></table>
+              </div>
+            </section>
+
+            <section class="control-strip">
+              <label>
+                <span>Row</span>
+                <input id="rowScroll" type="range" min="0" max="218" value="0" />
+              </label>
+              <label>
+                <span>Col</span>
+                <input id="colScroll" type="range" min="0" max="194" value="0" />
+              </label>
+              <span id="scrollReadout">r0 c0</span>
+              <span class="shortcut-note">Arrows move. Enter edits. Page Up and Down switch sheets.</span>
+            </section>
+          </section>
+
+          <aside class="side-panel">
+            <section class="craft-card">
+              <div class="card-head">
+                <div>
+                  <p class="panel-label">Craft bench</p>
+                  <h2>Input to output</h2>
+                </div>
+                <div class="viewer-meta">
+                  <span id="craftSizeReadout">bench: 5 x 5</span>
+                  <span id="craftOutputReadout">output: sheet 2</span>
+                </div>
+              </div>
+
+              <section class="craft-grid-wrap">
+                <div class="craft-panel">
+                  <p class="panel-label">Input</p>
+                  <table id="craftInputGrid" class="craft-grid" aria-label="Craft input from the active cube selection"></table>
+                </div>
+
+                <div class="craft-arrow" aria-hidden="true">-&gt;</div>
+
+                <div class="craft-panel">
+                  <p class="panel-label">Output</p>
+                  <table id="craftOutputGrid" class="craft-grid" aria-label="Craft output preview for deeper sheets"></table>
+                </div>
+              </section>
+
+              <section class="viewer-controls">
+                <label>
+                  <span>Bench size</span>
+                  <input id="craftSizeRange" type="range" min="0" max="2" value="1" />
+                </label>
+                <label>
+                  <span>Stack depth</span>
+                  <input id="craftDepthRange" type="range" min="1" max="8" value="3" />
+                </label>
+              </section>
+
+              <div class="viewer-actions craft-actions">
+                <button id="craftRotateBtn" type="button">Rotate</button>
+                <button id="craftMirrorBtn" type="button">Mirror off</button>
+                <button id="craftBakeBtn" type="button">Bake to next sheet</button>
+                <button id="craftStackBtn" type="button">Bake slab</button>
+              </div>
+
+              <p id="craftSummary" class="craft-summary"></p>
+            </section>
+
+            <section class="viewer-card">
+              <div class="card-head">
+                <div>
+                  <p class="panel-label">Voxel hatch</p>
+                  <h2>Shared cube view</h2>
+                </div>
+                <div class="viewer-meta">
+                  <span id="viewModeReadout">focus: world</span>
+                  <span id="voxelReadout">0 voxels</span>
+                </div>
+              </div>
+
+              <canvas
+                id="viewerCanvas"
+                class="viewer-canvas"
+                width="560"
+                height="560"
+                aria-label="Voxel preview of the SM7 goose cube"
+              ></canvas>
+
+              <p id="viewerHint" class="viewer-hint">Drag to orbit. Wheel zooms. Shift-wheel changes density. Alt-wheel changes depth. Click a voxel to select it.</p>
+
+              <section class="viewer-controls">
+                <label>
+                  <span>Depth radius</span>
+                  <input id="depthRange" type="range" min="1" max="16" value="6" />
+                </label>
+                <label>
+                  <span>Density floor</span>
+                  <input id="densityRange" type="range" min="0" max="10" value="6" />
+                </label>
+                <label>
+                  <span>Yaw</span>
+                  <input id="yawRange" type="range" min="0" max="360" value="26" />
+                </label>
+              </section>
+
+              <div class="viewer-actions">
+                <button id="resetViewBtn" type="button">Reset view</button>
+                <button id="focusSelectionBtn" type="button">Center on selection</button>
+              </div>
+            </section>
+
+            <section class="goose-card">
+              <div class="goose-head">
+                <div>
+                  <p class="panel-label">Companion</p>
+                  <h2 id="gooseName">seed-goose</h2>
+                </div>
+                <span id="gooseMoodBadge" class="mood-badge">drowsy</span>
+              </div>
+
+              <pre id="gooseAscii" class="goose-ascii" aria-label="ASCII goose"></pre>
+
+              <div class="speech-card">
+                <p class="panel-label">Speech</p>
+                <p id="gooseSpeech" class="goose-speech"></p>
+              </div>
+
+              <div class="memory-card">
+                <p class="panel-label">Memory</p>
+                <dl class="memory-grid">
+                  <div>
+                    <dt>Seed</dt>
+                    <dd id="gooseSeed">--</dd>
+                  </div>
+                  <div>
+                    <dt>Sheet</dt>
+                    <dd id="gooseSheet">1</dd>
+                  </div>
+                  <div>
+                    <dt>Cell</dt>
+                    <dd id="gooseCell">A1</dd>
+                  </div>
+                  <div>
+                    <dt>Visible</dt>
+                    <dd id="gooseViewer">0</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div class="status-card">
+                <p class="panel-label">Best-practice hatch</p>
+                <ul class="hint-list">
+                  <li>Every cube coordinate resolves to an SM7 glyph, even without an explicit override.</li>
+                  <li>The craft bench reads a small live recipe from the cube and bakes output into deeper sheets.</li>
+                  <li>No CDN, no Babel, and no mojibake in the UI copy.</li>
+                  <li>Overrides, formulas, ising drift, and viewer focus all stay in sync.</li>
+                </ul>
+              </div>
+            </section>
+          </aside>
+        </section>
+
+        <p id="statusLine" class="status-line" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <input id="csvFileInput" type="file" accept=".csv,text/csv" hidden />
+
+    <script src="./sm7-goose-cube-v0.1.0.js"></script>
+  </body>
+</html>
