@@ -400,6 +400,9 @@ class Assembler:
                     cond=cond,
                     set_flags=bool(kwargs.get("set_flags", False)),
                 )
+            elif op == "sub_reg":
+                rd, rn, rm = args
+                word = encode_dp_reg("SUB", int(rd), int(rn), int(rm), cond=cond)
             elif op == "cmp_imm":
                 rn, imm = args
                 word = encode_dp_imm("CMP", 0, int(rn), int(imm), cond=cond, set_flags=True)
@@ -471,34 +474,6 @@ def build_program() -> bytes:
 
     asm.instr("ldr_lit", 8, "lit_bg_color")
 
-    asm.instr("tst_imm", 2, KEY_A)
-    asm.instr("b", "move_right_seed", cond="EQ")
-    asm.instr("tst_imm", 2, KEY_B)
-    asm.instr("b", "move_dot1", cond="NE")
-
-    asm.label("move_right_seed")
-    asm.instr("tst_imm", 2, KEY_RIGHT)
-    asm.instr("b", "move_dot2_skip_right", cond="NE")
-    asm.instr("cmp_imm", 6, MAX_X)
-    asm.instr("add_imm", 6, 6, MOVE_STEP, cond="LT")
-    asm.label("move_dot2_skip_right")
-    asm.instr("tst_imm", 2, KEY_LEFT)
-    asm.instr("b", "move_dot2_skip_left", cond="NE")
-    asm.instr("cmp_imm", 6, 0)
-    asm.instr("sub_imm", 6, 6, MOVE_STEP, cond="NE")
-    asm.label("move_dot2_skip_left")
-    asm.instr("tst_imm", 2, KEY_UP)
-    asm.instr("b", "move_dot2_skip_up", cond="NE")
-    asm.instr("cmp_imm", 7, 0)
-    asm.instr("sub_imm", 7, 7, MOVE_STEP, cond="NE")
-    asm.label("move_dot2_skip_up")
-    asm.instr("tst_imm", 2, KEY_DOWN)
-    asm.instr("b", "move_dot2_skip_down", cond="NE")
-    asm.instr("cmp_imm", 7, MAX_Y)
-    asm.instr("add_imm", 7, 7, MOVE_STEP, cond="LT")
-    asm.label("move_dot2_skip_down")
-    asm.instr("b", "after_move")
-
     asm.label("move_dot1")
     asm.instr("tst_imm", 2, KEY_RIGHT)
     asm.instr("b", "move_dot1_skip_right", cond="NE")
@@ -520,6 +495,11 @@ def build_program() -> bytes:
     asm.instr("cmp_imm", 5, MAX_Y)
     asm.instr("add_imm", 5, 5, MOVE_STEP, cond="LT")
     asm.label("move_dot1_skip_down")
+
+    asm.instr("mov_imm", 6, MAX_X)
+    asm.instr("sub_reg", 6, 6, 4)
+    asm.instr("mov_imm", 7, MAX_Y)
+    asm.instr("sub_reg", 7, 7, 5)
 
     asm.label("after_move")
     asm.instr("mov_reg", 0, 11)

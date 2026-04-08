@@ -30,8 +30,8 @@ What this ROM proves:
 
 Current controls:
 
-- D-pad moves the left seed
-- hold `A` or `B` and use the D-pad to move the right seed
+- D-pad moves the main seed
+- the second seed mirrors the main seed automatically, so the two-voice field stays alive without any modifier combo
 - `Start` recenters both seeds
 - the central pixel sphere stays fixed as the field core
 - each seed always plays its own tone
