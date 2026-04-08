@@ -471,9 +471,12 @@ def build_program() -> bytes:
 
     asm.instr("ldr_lit", 8, "lit_bg_color")
 
+    asm.instr("tst_imm", 2, KEY_A)
+    asm.instr("b", "move_right_seed", cond="EQ")
     asm.instr("tst_imm", 2, KEY_B)
     asm.instr("b", "move_dot1", cond="NE")
 
+    asm.label("move_right_seed")
     asm.instr("tst_imm", 2, KEY_RIGHT)
     asm.instr("b", "move_dot2_skip_right", cond="NE")
     asm.instr("cmp_imm", 6, MAX_X)
