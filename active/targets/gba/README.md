@@ -8,6 +8,10 @@ Additional artifact:
   - autoplay goose-cube visualizer ROM derived from the active goose cube lane plus the darker `deepseek_html_20260407_055ad7.html` palette and summon vibe
 - `make_goose_cube_visualizer_055ad7_rom.py`
   - generator for that visualizer ROM
+- `goose_cube_visualizer_055ad7_v2.gba`
+  - v2 build with a stronger workbook frame, sheet beacons, orbit motes, and a slightly more legible cube-inspector silhouette
+- `make_goose_cube_visualizer_055ad7_v2_rom.py`
+  - generator for the v2 visualizer ROM
 
 Purpose:
 
