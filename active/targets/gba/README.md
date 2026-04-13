@@ -12,6 +12,17 @@ Additional artifact:
   - v2 build with a stronger workbook frame, sheet beacons, orbit motes, and a slightly more legible cube-inspector silhouette
 - `make_goose_cube_visualizer_055ad7_v2_rom.py`
   - generator for the v2 visualizer ROM
+- `goose_cube_visualizer_055ad7_v3.gba`
+  - controllable v3 visualizer build with workbook framing plus live seed/orbit control
+- `make_goose_cube_visualizer_055ad7_v3_rom.py`
+  - generator for the v3 visualizer ROM
+
+`v3` controls:
+
+- D-pad moves the active seed/orbit point
+- `A` steps the visualizer phase forward
+- `B` steps the phase backward
+- `Start` resets the seed and phase
 
 Purpose:
 
