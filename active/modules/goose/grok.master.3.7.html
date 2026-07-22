@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sphera Goose Garden 3.7</title>
+<style>
+  :root {
+    --ink: #eaf8f4;
+    --muted: #8ca5ac;
+    --line: rgba(179, 231, 221, 0.18);
+    --glass: rgba(7, 18, 23, 0.78);
+    --glass-strong: rgba(6, 15, 20, 0.94);
+    --warm: #ffad66;
+    --cool: #66d9e8;
+    --lime: #b7f09c;
+    --yellow: #ffe08a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink);
+    background: #030b0e;
+    font-family: "Courier New", monospace;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mix-blend-mode: overlay;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  button, input, select { font: inherit; }
+
+  button {
+    min-height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 11px;
+    color: var(--ink);
+    background: rgba(255,255,255,0.055);
+    cursor: pointer;
+  }
+
+  button:hover, button:focus-visible {
+    border-color: rgba(255, 224, 138, 0.72);
+    background: rgba(255, 224, 138, 0.11);
+    outline: none;
+  }
+
+  button.active {
+    color: #061014;
+    border-color: var(--yellow);
+    background: var(--yellow);
+  }
+
+  .chrome {
+    position: fixed;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .chrome button, .chrome input, .chrome select { pointer-events: auto; }
+
+  #header {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) auto minmax(210px, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--glass);
+    box-shadow: 0 14px 46px rgba(0,0,0,0.28);
+    backdrop-filter: blur(14px);
+  }
+
+  #identity {
+    width: fit-content;
+    max-width: 440px;
+    padding: 12px 14px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    color: var(--lime);
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: normal;
+    letter-spacing: 0;
+  }
+
+  #identity p {
+    max-width: 55ch;
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  #viewTabs {
+    justify-self: center;
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+  }
+
+  #viewTabs button { min-width: 72px; }
+
+  #telemetry {
+    justify-self: end;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(62px, 1fr));
+    gap: 1px;
+    overflow: hidden;
+  }
+
+  .metric {
+    min-width: 72px;
+    padding: 9px 10px;
+    background: rgba(255,255,255,0.025);
+  }
+
+  .metric label {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+
+  .metric output {
+    display: block;
+    margin-top: 3px;
+    color: var(--yellow);
+    font-size: 15px;
+  }
+
+  #stageRail {
+    top: 112px;
+    left: 14px;
+    display: grid;
+    gap: 4px;
+    width: 116px;
+    padding: 7px;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: 12px 1fr;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 5px 7px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: left;
+  }
+
+  .stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.035);
+  }
+
+  .stage.active {
+    color: #071114;
+    background: var(--lime);
+    border-color: var(--lime);
+  }
+
+  #sliceReadout {
+    top: 112px;
+    right: 14px;
+    width: 176px;
+    padding: 10px 12px;
+  }
+
+  #sliceReadout .slice-value {
+    margin: 4px 0 7px;
+    color: var(--cool);
+    font-family: Georgia, serif;
+    font-size: 28px;
+  }
+
+  #sliceReadout p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  #classDeck {
+    top: 248px;
+    right: 14px;
+    width: 190px;
+    padding: 8px;
+  }
+
+  #classDeck .class-buttons {
+    display: grid;
+    gap: 4px;
+    margin: 7px 0;
+  }
+
+  #classDeck button {
+    min-height: 32px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: left;
+  }
+
+  #classDeck button.active {
+    color: #061014;
+    background: var(--lime);
+    border-color: var(--lime);
+  }
+
+  #classDeck p {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.45;
+  }
+
+  .battle-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    margin-top: 7px;
+  }
+
+  .battle-stats span {
+    padding: 5px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    color: var(--yellow);
+    background: rgba(255,255,255,0.025);
+    font-size: 9px;
+  }
+
+  #dock {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    display: grid;
+    grid-template-columns: auto minmax(280px, 1fr) auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .dock-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    min-height: 48px;
+    padding: 6px;
+  }
+
+  #honkBtn {
+    min-width: 104px;
+    color: #071114;
+    border-color: var(--warm);
+    background: var(--warm);
+    font-weight: bold;
+  }
+
+  #abilityBtn {
+    color: #061014;
+    border-color: var(--lime);
+    background: var(--lime);
+    font-weight: bold;
+  }
+
+  #waveBtn {
+    color: var(--warm);
+    border-color: rgba(255,173,102,0.5);
+  }
+
+  #micBtn.live {
+    color: #061014;
+    background: var(--cool);
+    animation: breathe 0.9s ease-in-out infinite alternate;
+  }
+
+  @keyframes breathe {
+    to { box-shadow: 0 0 20px rgba(102,217,232,0.48); }
+  }
+
+  .slider {
+    display: grid;
+    grid-template-columns: auto minmax(58px, 1fr) 32px;
+    align-items: center;
+    gap: 5px;
+    min-width: 132px;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--yellow);
+  }
+
+  .slider output { color: var(--ink); text-align: right; }
+
+  #message {
+    position: fixed;
+    left: 50%;
+    bottom: 84px;
+    z-index: 5;
+    max-width: min(640px, calc(100vw - 28px));
+    transform: translateX(-50%);
+    border: 1px solid rgba(255,224,138,0.28);
+    border-radius: 6px;
+    padding: 7px 11px;
+    color: var(--yellow);
+    background: rgba(5,14,18,0.86);
+    font-size: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  #message.show { opacity: 1; }
+
+  @media (max-width: 880px) {
+    #header {
+      grid-template-columns: 1fr auto;
+    }
+    #identity p { display: none; }
+    #viewTabs {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-self: stretch;
+    }
+    #viewTabs button { flex: 1; min-width: 0; }
+    #telemetry { grid-template-columns: repeat(3, 1fr); }
+    #stageRail { top: 150px; }
+    #sliceReadout { top: 150px; }
+    #classDeck { display: none; }
+    #dock {
+      grid-template-columns: 1fr;
+      max-height: 31vh;
+      overflow: auto;
+    }
+    .dock-group { justify-content: center; }
+    #message { bottom: 176px; }
+  }
+
+  @media (max-width: 560px) {
+    #header { left: 8px; right: 8px; top: 8px; }
+    #identity { padding: 9px 10px; }
+    h1 { font-size: 19px; }
+    #telemetry .metric { min-width: 44px; padding: 7px 5px; }
+    #stageRail { display: none; }
+    #sliceReadout {
+      top: 122px;
+      right: 8px;
+      width: 132px;
+      padding: 8px;
+    }
+    #sliceReadout p { display: none; }
+    #dock { left: 8px; right: 8px; bottom: 8px; }
+  }
+</style>
+</head>
+<body>
+<!-- Original Sphera implementation. Uses no third-party game characters, trademarks, media, or external runtime dependencies. -->
+<canvas id="pond"></canvas>
+
+<header id="header" class="chrome">
+  <section id="identity" class="panel">
+    <div class="eyebrow">Sphera / goose.garden.L / master 3.7</div>
+    <h1>Goose Garden</h1>
+    <p>A class-based pond defense where every egg, honk, reed, and Unrooted footprint rewrites the shared field.</p>
+  </section>
+
+  <nav id="viewTabs" class="panel" aria-label="Pond view">
+    <button data-view="pond" class="active">Pond</button>
+    <button data-view="slice">Slice</button>
+    <button data-view="volume">Volume</button>
+    <button data-view="parallel">Parallel</button>
+    <button data-view="garden">Garden</button>
+  </nav>
+
+  <section id="telemetry" class="panel">
+    <div class="metric"><label>magnet</label><output id="magOut">0.00</output></div>
+    <div class="metric"><label>energy</label><output id="energyOut">0.00</output></div>
+    <div class="metric"><label>resonance</label><output id="resOut">0.00</output></div>
+    <div class="metric"><label>wave</label><output id="waveOut">0</output></div>
+  </section>
+</header>
+
+<aside id="stageRail" class="chrome panel" aria-label="Pond sequence">
+  <button class="stage active" data-stage="0"><span class="stage-dot"></span>seed</button>
+  <button class="stage" data-stage="1"><span class="stage-dot"></span>cluster</button>
+  <button class="stage" data-stage="2"><span class="stage-dot"></span>resonate</button>
+  <button class="stage" data-stage="3"><span class="stage-dot"></span>bloom</button>
+</aside>
+
+<aside id="classDeck" class="chrome panel">
+  <div class="eyebrow">Goose function</div>
+  <div class="class-buttons">
+    <button data-class="fpx" class="active">FP(x) / field vanguard</button>
+    <button data-class="layer">Egg Layer / nest engineer</button>
+    <button data-class="keeper">Pondkeeper / root support</button>
+  </div>
+  <p id="classReadout">Honk cone + vector skid. Fast, direct, gloriously impolite.</p>
+  <div class="battle-stats">
+    <span>GARDEN <b id="gardenOut">100</b></span>
+    <span>GOOSE <b id="healthOut">100</b></span>
+    <span>EGGS <b id="eggOut">4</b></span>
+    <span>SAP <b id="sapOut">100</b></span>
+  </div>
+  <p>WASD move / space primary / E ability / Q change function</p>
+</aside>
+
+<aside id="sliceReadout" class="chrome panel">
+  <div class="eyebrow">Active slicer</div>
+  <div class="slice-value">Y <span id="sliceOut">6</span></div>
+  <p>Arrow up/down changes depth. All views read the same shared pond state.</p>
+</aside>
+
+<footer id="dock" class="chrome">
+  <section class="dock-group panel">
+    <button id="honkBtn">HONK BURST</button>
+    <button id="abilityBtn">VECTOR SKID</button>
+    <button id="waveBtn">Call Unrooted</button>
+    <button id="micBtn">Mic resonance</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="autoBtn" class="active">Auto sequence</button>
+  </section>
+
+  <section class="dock-group panel">
+    <label class="slider">temperature <input id="tempInput" type="range" min="0.15" max="4" step="0.01" value="1.25"><output id="tempOut">1.25</output></label>
+    <label class="slider">coupling <input id="couplingInput" type="range" min="0.2" max="2.4" step="0.01" value="1.00"><output id="couplingOut">1.00</output></label>
+    <label class="slider">flow <input id="flowInput" type="range" min="0" max="2.5" step="0.01" value="0.85"><output id="flowOut">0.85</output></label>
+    <label class="slider">slice <input id="sliceInput" type="range" min="0" max="11" step="1" value="6"><output id="sliceDockOut">6</output></label>
+  </section>
+
+  <section class="dock-group panel">
+    <select id="presetSelect" aria-label="Pond preset">
+      <option value="goose_trace">goose trace</option>
+      <option value="frozen_pond">frozen pond</option>
+      <option value="harmonic_glide">harmonic glide</option>
+      <option value="storm_cell">storm cell</option>
+    </select>
+    <button id="loadPresetBtn">Load</button>
+    <button id="scatterBtn">Scatter</button>
+    <button id="saveBtn">Save</button>
+    <button id="recallBtn">Recall</button>
+  </section>
+</footer>
+
+<div id="message"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("pond");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const SIZE = 12;
+  const COUNT = SIZE * SIZE * SIZE;
+  const TAU = Math.PI * 2;
+  const STORAGE_KEY = "sphera.goose.garden.3.7";
+  const stages = [
+    { name: "seed", temp: 2.65, coupling: 0.58, flow: 0.45, steps: 6, field: 0.00, message: "Seed state: independent spins feel out the pond." },
+    { name: "cluster", temp: 1.55, coupling: 1.05, flow: 0.72, steps: 10, field: 0.02, message: "Cluster state: fellow colors find one another." },
+    { name: "resonate", temp: 0.96, coupling: 1.34, flow: 1.18, steps: 14, field: 0.08, message: "Resonant state: slices begin to agree across depth." },
+    { name: "bloom", temp: 0.58, coupling: 1.68, flow: 1.52, steps: 18, field: 0.14, message: "Bloom state: the pond holds a coherent memory." }
+  ];
+  const gooseClasses = {
+    fpx: {
+      name: "FP(x) / field vanguard",
+      primary: "HONK BURST",
+      ability: "VECTOR SKID",
+      readout: "Honk cone + vector skid. Fast, direct, gloriously impolite.",
+      color: "#ffe08a"
+    },
+    layer: {
+      name: "Egg Layer / nest engineer",
+      primary: "LAY RESONANT EGG",
+      ability: "HATCH CASCADE",
+      readout: "Builds singing egg-nests that stabilize the pond and peck the Unrooted.",
+      color: "#ffad66"
+    },
+    keeper: {
+      name: "Pondkeeper / root support",
+      primary: "PLANT REED WALL",
+      ability: "FLOOD BLOOM",
+      readout: "Grows living barriers, restores the garden, and turns blight into bloom.",
+      color: "#b7f09c"
+    }
+  };
+
+  const spins = new Int8Array(COUNT);
+  const nextSpins = new Int8Array(COUNT);
+  const phase = new Float32Array(COUNT);
+  const pressure = new Float32Array(COUNT);
+  const activity = new Float32Array(COUNT);
+  const screenPoints = new Array(COUNT);
+  let W = 1;
+  let H = 1;
+  let DPR = 1;
+  let view = "pond";
+  let stage = 0;
+  let autoSequence = true;
+  let running = true;
+  let elapsed = 0;
+  let stageElapsed = 0;
+  let impulse = 0;
+  let micEnergy = 0;
+  let micLive = false;
+  let audioContext = null;
+  let analyser = null;
+  let micStream = null;
+  let fftData = null;
+  let lastFrame = performance.now();
+  let lastTelemetry = 0;
+  let messageTimer = 0;
+  let magnetization = 0;
+  let meanEnergy = 0;
+  let resonance = 0;
+  let orbit = 0.45;
+  let orbitTarget = orbit;
+  let dragging = false;
+  let lastPointerX = 0;
+  const keys = new Set();
+  const enemies = [];
+  const eggs = [];
+  const reeds = [];
+  const battleBursts = [];
+  const player = { x: 6, z: 9.5, dx: 0, dz: -1, health: 100, eggs: 4, sap: 100, classKey: "fpx", primaryCd: 0, abilityCd: 0, invuln: 0 };
+  let wave = 0;
+  let gardenHealth = 100;
+  let waveLive = false;
+  let waveClearTimer = 0;
+
+  const ui = {
+    mag: document.getElementById("magOut"),
+    energy: document.getElementById("energyOut"),
+    res: document.getElementById("resOut"),
+    wave: document.getElementById("waveOut"),
+    garden: document.getElementById("gardenOut"),
+    health: document.getElementById("healthOut"),
+    eggs: document.getElementById("eggOut"),
+    sap: document.getElementById("sapOut"),
+    classReadout: document.getElementById("classReadout"),
+    primary: document.getElementById("honkBtn"),
+    ability: document.getElementById("abilityBtn"),
+    waveBtn: document.getElementById("waveBtn"),
+    temp: document.getElementById("tempInput"),
+    coupling: document.getElementById("couplingInput"),
+    flow: document.getElementById("flowInput"),
+    slice: document.getElementById("sliceInput"),
+    tempOut: document.getElementById("tempOut"),
+    couplingOut: document.getElementById("couplingOut"),
+    flowOut: document.getElementById("flowOut"),
+    sliceOut: document.getElementById("sliceOut"),
+    sliceDockOut: document.getElementById("sliceDockOut"),
+    message: document.getElementById("message"),
+    mic: document.getElementById("micBtn"),
+    pause: document.getElementById("pauseBtn"),
+    auto: document.getElementById("autoBtn"),
+    preset: document.getElementById("presetSelect")
+  };
+
+  function id(x, y, z) {
+    return ((x + SIZE) % SIZE) * SIZE * SIZE + ((y + SIZE) % SIZE) * SIZE + ((z + SIZE) % SIZE);
+  }
+
+  function coords(index) {
+    const x = Math.floor(index / (SIZE * SIZE));
+    const rest = index % (SIZE * SIZE);
+    return [x, Math.floor(rest / SIZE), rest % SIZE];
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function hashNoise(x, y, z, seed = 0) {
+    const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + seed * 19.19) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
+  function initArrays() {
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      spins[i] = hashNoise(x, y, z, 3) > 0.5 ? 1 : -1;
+      phase[i] = hashNoise(x, y, z, 7) * TAU;
+      pressure[i] = 0;
+      activity[i] = 0;
+    }
+  }
+
+  function preset(name) {
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      const nx = (x - SIZE / 2) / SIZE;
+      const ny = (y - SIZE / 2) / SIZE;
+      const nz = (z - SIZE / 2) / SIZE;
+      let value = 0;
+
+      if (name === "frozen_pond") value = 1;
+      if (name === "harmonic_glide") value = Math.sin(x * 0.72) + Math.cos(y * 0.62) + Math.sin(z * 0.84);
+      if (name === "storm_cell") value = Math.sin((nx * nx + nz * nz) * 72 - y * 0.9) + hashNoise(x, y, z, 11) - 0.35;
+      if (name === "goose_trace") {
+        const body = ((nx + 0.08) * (nx + 0.08)) / 0.095 + ((nz + 0.02) * (nz + 0.02)) / 0.038 < 1;
+        const neck = nx > 0.09 && nx < 0.28 && Math.abs(nz - (nx - 0.09) * 0.35) < 0.07;
+        const head = (nx - 0.29) * (nx - 0.29) + (nz - 0.08) * (nz - 0.08) < 0.012;
+        const wing = ((nx + 0.10) * (nx + 0.10)) / 0.036 + ((nz + 0.02) * (nz + 0.02)) / 0.014 < 1;
+        value = (body || neck || head) && !wing ? 1 : -1;
+        value += Math.sin(y * 0.8 + x * 0.3) * 0.15;
+      }
+
+      spins[i] = value >= 0 ? 1 : -1;
+      pressure[i] = 0;
+      activity[i] = 0;
+    }
+    showMessage(`${name.replaceAll("_", " ")} loaded into every POV.`);
+  }
+
+  function scatter() {
+    for (let i = 0; i < COUNT; i++) {
+      spins[i] = Math.random() > 0.5 ? 1 : -1;
+      activity[i] = 1;
+    }
+    showMessage("Pond scattered. Same state, four readings.");
+  }
+
+  function neighborSum(x, y, z) {
+    return spins[id(x + 1, y, z)] + spins[id(x - 1, y, z)] +
+      spins[id(x, y + 1, z)] + spins[id(x, y - 1, z)] +
+      spins[id(x, y, z + 1)] + spins[id(x, y, z - 1)];
+  }
+
+  function mutateField(cx, cz, radius, spin, force = 1) {
+    const sliceY = Number(ui.slice.value);
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const d = Math.hypot(x - cx, z - cz);
+        if (d > radius) continue;
+        for (let y = Math.max(0, sliceY - 1); y <= Math.min(SIZE - 1, sliceY + 1); y++) {
+          const index = id(x, y, z);
+          if (Math.random() < force * (1 - d / (radius + 0.01))) spins[index] = spin;
+          activity[index] = 1;
+          pressure[index] = Math.max(pressure[index], force * 0.8);
+        }
+      }
+    }
+  }
+
+  function addBurst(x, z, color, maxRadius = 3) {
+    battleBursts.push({ x, z, color, radius: 0.2, maxRadius, alpha: 1 });
+  }
+
+  function setClass(classKey) {
+    if (!gooseClasses[classKey]) return;
+    player.classKey = classKey;
+    const config = gooseClasses[classKey];
+    document.querySelectorAll("[data-class]").forEach(button => button.classList.toggle("active", button.dataset.class === classKey));
+    ui.primary.textContent = config.primary;
+    ui.ability.textContent = config.ability;
+    ui.classReadout.textContent = config.readout;
+    showMessage(`${config.name} online.`);
+  }
+
+  function spawnWave() {
+    if (waveLive) {
+      showMessage("The current Unrooted wave is still in the pond.");
+      return;
+    }
+    wave++;
+    waveLive = true;
+    waveClearTimer = 0;
+    const count = 4 + wave * 2;
+    for (let i = 0; i < count; i++) {
+      const side = Math.floor(Math.random() * 4);
+      const along = 0.6 + Math.random() * (SIZE - 1.2);
+      const x = side === 0 ? 0.15 : side === 1 ? SIZE - 0.15 : along;
+      const z = side === 2 ? 0.15 : side === 3 ? SIZE - 0.15 : along;
+      const brute = wave > 1 && i % 5 === 0;
+      enemies.push({
+        x, z,
+        health: brute ? 72 + wave * 8 : 30 + wave * 5,
+        maxHealth: brute ? 72 + wave * 8 : 30 + wave * 5,
+        speed: brute ? 0.34 : 0.52 + wave * 0.018,
+        damage: brute ? 13 : 6,
+        attackCd: Math.random(),
+        wobble: Math.random() * TAU,
+        brute
+      });
+    }
+    ui.waveBtn.textContent = `Wave ${wave} live`;
+    showMessage(`Wave ${wave}: ${count} Unrooted are crawling toward the garden core.`);
+  }
+
+  function hurtEnemy(enemy, amount, pushX = 0, pushZ = 0) {
+    if (enemy.health <= 0) return;
+    enemy.health -= amount;
+    enemy.x = clamp(enemy.x + pushX, 0, SIZE - 0.01);
+    enemy.z = clamp(enemy.z + pushZ, 0, SIZE - 0.01);
+    if (enemy.health <= 0) {
+      player.sap = clamp(player.sap + (enemy.brute ? 15 : 7), 0, 100);
+      if (Math.random() < 0.18) player.eggs = clamp(player.eggs + 1, 0, 6);
+      addBurst(enemy.x, enemy.z, "#b7f09c", enemy.brute ? 2.8 : 1.8);
+      mutateField(enemy.x, enemy.z, enemy.brute ? 2.2 : 1.4, 1, 0.9);
+    }
+  }
+
+  function primaryAction() {
+    if (player.primaryCd > 0 || !running) return;
+    const role = player.classKey;
+    if (role === "fpx") {
+      player.primaryCd = 0.48;
+      impulse = 1;
+      for (const enemy of enemies) {
+        const ex = enemy.x - player.x;
+        const ez = enemy.z - player.z;
+        const dist = Math.hypot(ex, ez) || 1;
+        const facing = (ex * player.dx + ez * player.dz) / dist;
+        if (dist < 4.6 && facing > 0.1) hurtEnemy(enemy, 25, ex / dist * 0.7, ez / dist * 0.7);
+      }
+      mutateField(player.x + player.dx * 2, player.z + player.dz * 2, 3.2, 1, 0.9);
+      addBurst(player.x, player.z, gooseClasses.fpx.color, 4.4);
+      playHonk();
+      showMessage("FP(x) honk vector propagated through the active slice.");
+    }
+    if (role === "layer") {
+      if (player.eggs < 1) return showMessage("No resonant eggs ready yet.");
+      player.primaryCd = 0.6;
+      player.eggs -= 1;
+      eggs.push({ x: player.x, z: player.z, pulse: 0.35, age: 0, health: 42 });
+      mutateField(player.x, player.z, 1.4, 1, 1);
+      addBurst(player.x, player.z, gooseClasses.layer.color, 1.8);
+      showMessage("Resonant egg nested. It will sing at nearby Unrooted.");
+    }
+    if (role === "keeper") {
+      if (player.sap < 24) return showMessage("The Pondkeeper needs more sap.");
+      player.primaryCd = 0.7;
+      player.sap -= 24;
+      const px = -player.dz;
+      const pz = player.dx;
+      for (let n = -1; n <= 1; n++) {
+        reeds.push({
+          x: clamp(player.x + player.dx * 1.2 + px * n * 0.7, 0, SIZE - 0.01),
+          z: clamp(player.z + player.dz * 1.2 + pz * n * 0.7, 0, SIZE - 0.01),
+          health: 55,
+          age: 0
+        });
+      }
+      mutateField(player.x + player.dx, player.z + player.dz, 2.3, 1, 0.95);
+      showMessage("Reed wall rooted into the field.");
+    }
+    updateBattleHud();
+  }
+
+  function specialAction() {
+    if (player.abilityCd > 0 || !running) return;
+    const role = player.classKey;
+    if (role === "fpx") {
+      player.abilityCd = 4.5;
+      player.x = clamp(player.x + player.dx * 3.1, 0.3, SIZE - 0.3);
+      player.z = clamp(player.z + player.dz * 3.1, 0.3, SIZE - 0.3);
+      for (const enemy of enemies) {
+        const d = Math.hypot(enemy.x - player.x, enemy.z - player.z);
+        if (d < 2.8) hurtEnemy(enemy, 34, (enemy.x - player.x) * 0.35, (enemy.z - player.z) * 0.35);
+      }
+      mutateField(player.x, player.z, 3.1, 1, 1);
+      addBurst(player.x, player.z, "#ffffff", 3.5);
+      showMessage("Vector skid completed. The goose has violated local geometry.");
+    }
+    if (role === "layer") {
+      if (!eggs.length) return showMessage("Lay resonant eggs before calling a hatch cascade.");
+      player.abilityCd = 6;
+      for (const egg of eggs) {
+        for (const enemy of enemies) {
+          const d = Math.hypot(enemy.x - egg.x, enemy.z - egg.z);
+          if (d < 4.2) hurtEnemy(enemy, 38 * (1 - d / 5));
+        }
+        mutateField(egg.x, egg.z, 3, 1, 1);
+        addBurst(egg.x, egg.z, gooseClasses.layer.color, 4);
+      }
+      eggs.length = 0;
+      player.eggs = clamp(player.eggs + 1, 0, 6);
+      showMessage("Hatch cascade: every nest became a temporary gosling singularity.");
+    }
+    if (role === "keeper") {
+      if (player.sap < 55) return showMessage("Flood bloom needs 55 sap.");
+      player.abilityCd = 8;
+      player.sap -= 55;
+      gardenHealth = clamp(gardenHealth + 24, 0, 100);
+      player.health = clamp(player.health + 32, 0, 100);
+      for (const enemy of enemies) hurtEnemy(enemy, 16);
+      mutateField(SIZE / 2, SIZE / 2, SIZE, 1, 0.72);
+      addBurst(SIZE / 2, SIZE / 2, gooseClasses.keeper.color, 8);
+      showMessage("Flood bloom restored the garden and washed through every POV.");
+    }
+    updateBattleHud();
+  }
+
+  function updateBattleHud() {
+    ui.wave.textContent = waveLive ? `${wave}!` : wave;
+    ui.garden.textContent = Math.ceil(gardenHealth);
+    ui.health.textContent = Math.ceil(player.health);
+    ui.eggs.textContent = Math.floor(player.eggs);
+    ui.sap.textContent = Math.floor(player.sap);
+    ui.primary.style.opacity = player.primaryCd > 0 ? 0.55 : 1;
+    ui.ability.style.opacity = player.abilityCd > 0 ? 0.55 : 1;
+  }
+
+  function battleStep(dt) {
+    player.primaryCd = Math.max(0, player.primaryCd - dt);
+    player.abilityCd = Math.max(0, player.abilityCd - dt);
+    player.invuln = Math.max(0, player.invuln - dt);
+    player.sap = clamp(player.sap + dt * 2.2, 0, 100);
+    player.eggs = clamp(player.eggs + dt * 0.035, 0, 6);
+
+    let mx = (keys.has("KeyD") ? 1 : 0) - (keys.has("KeyA") ? 1 : 0);
+    let mz = (keys.has("KeyS") ? 1 : 0) - (keys.has("KeyW") ? 1 : 0);
+    const moveLength = Math.hypot(mx, mz);
+    if (moveLength > 0) {
+      mx /= moveLength;
+      mz /= moveLength;
+      player.dx = mx;
+      player.dz = mz;
+      const speed = player.classKey === "fpx" ? 2.65 : player.classKey === "layer" ? 2.0 : 1.75;
+      player.x = clamp(player.x + mx * speed * dt, 0.25, SIZE - 0.25);
+      player.z = clamp(player.z + mz * speed * dt, 0.25, SIZE - 0.25);
+      mutateField(player.x, player.z, 0.9, 1, 0.18);
+    }
+
+    for (const egg of eggs) {
+      egg.age += dt;
+      egg.pulse -= dt;
+      if (egg.pulse <= 0) {
+        egg.pulse = 1.2;
+        let target = null;
+        let targetDist = 4.2;
+        for (const enemy of enemies) {
+          const d = Math.hypot(enemy.x - egg.x, enemy.z - egg.z);
+          if (d < targetDist) { target = enemy; targetDist = d; }
+        }
+        if (target) hurtEnemy(target, 11);
+        gardenHealth = clamp(gardenHealth + 0.35, 0, 100);
+        mutateField(egg.x, egg.z, 1.8, 1, 0.5);
+        addBurst(egg.x, egg.z, gooseClasses.layer.color, 2.2);
+      }
+    }
+
+    for (const reed of reeds) {
+      reed.age += dt;
+      mutateField(reed.x, reed.z, 0.7, 1, 0.08);
+    }
+
+    for (const enemy of enemies) {
+      enemy.attackCd -= dt;
+      enemy.wobble += dt * (enemy.brute ? 2 : 4);
+      let tx = SIZE / 2;
+      let tz = SIZE / 2;
+      const playerDist = Math.hypot(player.x - enemy.x, player.z - enemy.z);
+      if (playerDist < 3.1) { tx = player.x; tz = player.z; }
+      let vx = tx - enemy.x;
+      let vz = tz - enemy.z;
+      const dist = Math.hypot(vx, vz) || 1;
+      vx /= dist;
+      vz /= dist;
+      let slow = 1;
+      for (const reed of reeds) {
+        const rd = Math.hypot(reed.x - enemy.x, reed.z - enemy.z);
+        if (rd < 0.75) {
+          slow = 0.18;
+          if (enemy.attackCd <= 0) {
+            reed.health -= enemy.damage;
+            enemy.attackCd = 0.75;
+          }
+        }
+      }
+      enemy.x = clamp(enemy.x + vx * enemy.speed * slow * dt, 0, SIZE - 0.01);
+      enemy.z = clamp(enemy.z + vz * enemy.speed * slow * dt, 0, SIZE - 0.01);
+      mutateField(enemy.x, enemy.z, enemy.brute ? 1.2 : 0.72, -1, 0.14);
+
+      if (playerDist < 0.72 && enemy.attackCd <= 0 && player.invuln <= 0) {
+        player.health -= enemy.damage;
+        player.invuln = 0.55;
+        enemy.attackCd = 0.8;
+        addBurst(player.x, player.z, "#ff6b5f", 1.4);
+      }
+      if (Math.hypot(enemy.x - SIZE / 2, enemy.z - SIZE / 2) < 0.72 && enemy.attackCd <= 0) {
+        gardenHealth -= enemy.damage * 0.65;
+        enemy.attackCd = 0.9;
+        addBurst(SIZE / 2, SIZE / 2, "#ff6b5f", 1.7);
+      }
+    }
+
+    for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].health <= 0) enemies.splice(i, 1);
+    for (let i = reeds.length - 1; i >= 0; i--) if (reeds[i].health <= 0 || reeds[i].age > 38) reeds.splice(i, 1);
+    for (let i = battleBursts.length - 1; i >= 0; i--) {
+      battleBursts[i].radius += dt * 4.2;
+      battleBursts[i].alpha -= dt * 0.72;
+      if (battleBursts[i].alpha <= 0 || battleBursts[i].radius > battleBursts[i].maxRadius) battleBursts.splice(i, 1);
+    }
+
+    if (waveLive && enemies.length === 0) {
+      waveClearTimer += dt;
+      if (waveClearTimer > 0.8) {
+        waveLive = false;
+        gardenHealth = clamp(gardenHealth + 8, 0, 100);
+        player.eggs = clamp(player.eggs + 1, 0, 6);
+        ui.waveBtn.textContent = "Call Unrooted";
+        showMessage(`Wave ${wave} composted. Garden restored; one egg recovered.`);
+      }
+    }
+    if (player.health <= 0) {
+      player.health = 100;
+      player.x = 6;
+      player.z = 9.5;
+      gardenHealth = clamp(gardenHealth - 12, 0, 100);
+      showMessage("Goose reconstituted at the garden core. The pond remembers.");
+    }
+    if (gardenHealth <= 0) {
+      gardenHealth = 100;
+      enemies.length = 0;
+      eggs.length = 0;
+      reeds.length = 0;
+      waveLive = false;
+      wave = 0;
+      scatter();
+      showMessage("The garden fell, scattered, and began again.");
+    }
+    updateBattleHud();
+  }
+
+  function simulationStep(dt) {
+    const config = stages[stage];
+    const temperature = Number(ui.temp.value) + micEnergy * 1.6 + impulse * 0.45;
+    const coupling = Number(ui.coupling.value);
+    const steps = Math.max(2, Math.floor(config.steps + Number(ui.flow.value) * 5 + micEnergy * 18));
+    const externalField = config.field + micEnergy * 0.12 + impulse * 0.2;
+
+    for (let n = 0; n < steps; n++) {
+      const index = Math.floor(Math.random() * COUNT);
+      const [x, y, z] = coords(index);
+      const sum = neighborSum(x, y, z);
+      const dE = 2 * spins[index] * (sum * coupling + externalField);
+      if (dE <= 0 || Math.random() < Math.exp(-dE / Math.max(0.08, temperature))) {
+        spins[index] *= -1;
+        activity[index] = 1;
+        pressure[index] = clamp(Math.abs(sum) / 6, 0, 1);
+      }
+    }
+
+    const drift = Number(ui.flow.value) * dt;
+    for (let i = 0; i < COUNT; i++) {
+      activity[i] *= Math.pow(0.025, dt);
+      pressure[i] += (Math.abs(neighborSum(...coords(i))) / 6 - pressure[i]) * dt * 1.8;
+      phase[i] += drift * (0.45 + pressure[i] * 0.75);
+    }
+    impulse *= Math.pow(0.045, dt);
+  }
+
+  function computeTelemetry() {
+    let mag = 0;
+    let energy = 0;
+    let sliceAgreement = 0;
+    const sliceY = Number(ui.slice.value);
+
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      mag += spins[i];
+      energy += -spins[i] * neighborSum(x, y, z) / 12;
+      if (y === sliceY) {
+        sliceAgreement += spins[i] === spins[id(x, y + 1, z)] ? 1 : -1;
+      }
+    }
+
+    magnetization = mag / COUNT;
+    meanEnergy = energy / COUNT;
+    resonance = clamp(Math.abs(sliceAgreement) / (SIZE * SIZE) * 0.65 + Math.abs(magnetization) * 0.35 + micEnergy * 0.2, 0, 1);
+    ui.mag.textContent = magnetization.toFixed(2);
+    ui.energy.textContent = meanEnergy.toFixed(2);
+    ui.res.textContent = resonance.toFixed(2);
+  }
+
+  function resize() {
+    DPR = clamp(window.devicePixelRatio || 1, 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  }
+
+  function background() {
+    const g = ctx.createRadialGradient(W * 0.52, H * 0.48, 20, W * 0.52, H * 0.48, Math.max(W, H) * 0.7);
+    g.addColorStop(0, `hsl(${184 + resonance * 34} 42% ${10 + resonance * 5}%)`);
+    g.addColorStop(0.56, "#061217");
+    g.addColorStop(1, "#020709");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "rgba(126, 209, 194, 0.035)";
+    ctx.lineWidth = 1;
+    const gap = 42;
+    for (let x = (elapsed * 6) % gap; x < W; x += gap) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+  }
+
+  function colorFor(spin, alpha = 1, glow = 0) {
+    if (spin > 0) return `hsla(${28 + glow * 18}, ${78 + glow * 18}%, ${58 + glow * 16}%, ${alpha})`;
+    return `hsla(${185 + glow * 24}, ${68 + glow * 20}%, ${51 + glow * 18}%, ${alpha})`;
+  }
+
+  function pondPoint(x, z, box) {
+    const cx = box.x + box.w * 0.5;
+    const cy = box.y + box.h * 0.56;
+    const radius = Math.min(box.w, box.h) * 0.38;
+    const cellW = radius * 2.05 / SIZE;
+    const cellH = radius * 1.2 / SIZE;
+    return {
+      x: cx + (x - (SIZE - 1) / 2) * cellW + (z - SIZE / 2) * cellW * 0.11,
+      y: cy + (z - (SIZE - 1) / 2) * cellH,
+      scale: clamp(cellW / 24, 0.52, 1.4),
+      cellW,
+      cellH
+    };
+  }
+
+  function project3D(x, y, z, box, scale = 1) {
+    const cx = box.x + box.w * 0.5;
+    const cy = box.y + box.h * 0.52;
+    const nx = (x - (SIZE - 1) / 2) / SIZE;
+    const ny = (y - (SIZE - 1) / 2) / SIZE;
+    const nz = (z - (SIZE - 1) / 2) / SIZE;
+    const ca = Math.cos(orbit);
+    const sa = Math.sin(orbit);
+    const rx = nx * ca - nz * sa;
+    const rz = nx * sa + nz * ca;
+    const perspective = 1 / (1.35 + rz * 0.5);
+    const unit = Math.min(box.w, box.h) * 0.76 * scale;
+    return {
+      x: cx + rx * unit * perspective,
+      y: cy + (ny * -0.78 + rz * 0.30) * unit * perspective,
+      depth: rz + ny * 0.15,
+      scale: perspective
+    };
+  }
+
+  function drawGlassPlane(box, yLevel, alpha, hue) {
+    const corners = [
+      project3D(0, yLevel, 0, box),
+      project3D(SIZE - 1, yLevel, 0, box),
+      project3D(SIZE - 1, yLevel, SIZE - 1, box),
+      project3D(0, yLevel, SIZE - 1, box)
+    ];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i = 1; i < corners.length; i++) ctx.lineTo(corners[i].x, corners[i].y);
+    ctx.closePath();
+    ctx.fillStyle = `hsla(${hue}, 68%, 58%, ${alpha})`;
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${hue}, 78%, 74%, ${alpha * 2.6})`;
+    ctx.stroke();
+  }
+
+  function drawPond(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const cx = box.x + box.w * 0.5;
+    const cy = box.y + box.h * 0.56;
+    const radius = Math.min(box.w, box.h) * 0.38;
+    const pondGrad = ctx.createRadialGradient(cx, cy, radius * 0.12, cx, cy, radius);
+    pondGrad.addColorStop(0, `rgba(67, 191, 181, ${0.18 + resonance * 0.14})`);
+    pondGrad.addColorStop(0.72, "rgba(30, 91, 100, 0.22)");
+    pondGrad.addColorStop(1, "rgba(8, 28, 34, 0.04)");
+    ctx.fillStyle = pondGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, radius * 1.22, radius * 0.72, 0, 0, TAU);
+    ctx.fill();
+
+    const sliceY = Number(ui.slice.value);
+    const cellW = radius * 2.05 / SIZE;
+    const cellH = radius * 1.2 / SIZE;
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const index = id(x, sliceY, z);
+        const hop = Math.sin(elapsed * 2.6 + phase[index]) * (3 + Number(ui.flow.value) * 2) * (0.35 + pressure[index] * 0.65);
+        const px = cx + (x - (SIZE - 1) / 2) * cellW + (z - SIZE / 2) * cellW * 0.11;
+        const py = cy + (z - (SIZE - 1) / 2) * cellH + hop;
+        const agree = pressure[index];
+        ctx.fillStyle = colorFor(spins[index], 0.30 + agree * 0.55, agree);
+        ctx.strokeStyle = colorFor(spins[index], 0.15 + agree * 0.28, agree);
+        roundedRect(px - cellW * 0.38, py - cellH * 0.34, cellW * 0.76, cellH * 0.68, 3);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    for (let ring = 0; ring < 4; ring++) {
+      const expansion = ((elapsed * 34 + ring * radius * 0.32) % (radius * 1.18));
+      ctx.strokeStyle = `rgba(255, 224, 138, ${Math.max(0, 0.18 - expansion / radius * 0.13 + impulse * 0.18)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, expansion * 1.22, expansion * 0.72, 0, 0, TAU);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "SURFACE POND", `Y=${sliceY} / hopping domains`);
+    ctx.restore();
+  }
+
+  function drawGooseMarker(point, angle, color) {
+    ctx.save();
+    ctx.translate(point.x, point.y);
+    ctx.rotate(angle);
+    ctx.scale(point.scale, point.scale);
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
+    ctx.fillStyle = "#f5f2df";
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 10, 6.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(7, -5, 3.2, 8, -0.38, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(11, -11, 4.1, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(14, -12);
+    ctx.lineTo(22, -10);
+    ctx.lineTo(14, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#071114";
+    ctx.beginPath();
+    ctx.arc(12, -12, 1, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-5, 6);
+    ctx.lineTo(-8, 11);
+    ctx.moveTo(3, 6);
+    ctx.lineTo(1, 11);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawEnemyMarker(point, enemy) {
+    const pulse = 1 + Math.sin(enemy.wobble) * 0.08;
+    ctx.save();
+    ctx.translate(point.x, point.y);
+    ctx.scale(point.scale * pulse * (enemy.brute ? 1.35 : 1), point.scale * pulse * (enemy.brute ? 1.35 : 1));
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = "#d5ff77";
+    ctx.fillStyle = enemy.brute ? "#17251c" : "#11201d";
+    ctx.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * TAU;
+      const r = i % 2 ? 9 : 12;
+      const x = Math.cos(a) * r;
+      const y = Math.sin(a) * r * 0.68;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#d5ff77";
+    ctx.beginPath();
+    ctx.arc(-3, -1, 1.6, 0, TAU);
+    ctx.arc(4, -1, 1.6, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = "rgba(3,11,14,0.8)";
+    ctx.fillRect(-10, 10, 20, 2.5);
+    ctx.fillStyle = enemy.brute ? "#ffad66" : "#d5ff77";
+    ctx.fillRect(-10, 10, 20 * clamp(enemy.health / enemy.maxHealth, 0, 1), 2.5);
+    ctx.restore();
+  }
+
+  function drawGarden(box, label = true) {
+    drawPond(box, false);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const core = pondPoint(SIZE / 2, SIZE / 2, box);
+    const corePulse = 15 + Math.sin(elapsed * 3) * 3;
+    ctx.strokeStyle = `rgba(183,240,156,${0.35 + gardenHealth / 220})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(core.x, core.y, corePulse * 1.55, corePulse * 0.8, 0, 0, TAU);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(183,240,156,0.13)";
+    ctx.beginPath();
+    ctx.ellipse(core.x, core.y, corePulse * 1.2, corePulse * 0.62, 0, 0, TAU);
+    ctx.fill();
+
+    for (const reed of reeds) {
+      const p = pondPoint(reed.x, reed.z, box);
+      ctx.strokeStyle = `rgba(183,240,156,${clamp(reed.health / 55, 0.2, 1)})`;
+      ctx.lineWidth = 2.4 * p.scale;
+      for (let n = -1; n <= 1; n++) {
+        ctx.beginPath();
+        ctx.moveTo(p.x + n * 4 * p.scale, p.y + 6 * p.scale);
+        ctx.quadraticCurveTo(p.x + n * 7 * p.scale, p.y - 6 * p.scale, p.x + n * 3 * p.scale, p.y - 15 * p.scale);
+        ctx.stroke();
+      }
+    }
+
+    for (const egg of eggs) {
+      const p = pondPoint(egg.x, egg.z, box);
+      ctx.shadowBlur = 13;
+      ctx.shadowColor = gooseClasses.layer.color;
+      ctx.fillStyle = "#fff4d8";
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y - 4 * p.scale, 6 * p.scale, 8.5 * p.scale, 0, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(255,173,102,${0.35 + Math.sin(egg.age * 6) * 0.2})`;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, (10 + Math.sin(egg.age * 6) * 2) * p.scale, 5 * p.scale, 0, 0, TAU);
+      ctx.stroke();
+    }
+
+    for (const enemy of enemies) drawEnemyMarker(pondPoint(enemy.x, enemy.z, box), enemy);
+    for (const burst of battleBursts) {
+      const p = pondPoint(burst.x, burst.z, box);
+      ctx.strokeStyle = burst.color;
+      ctx.globalAlpha = clamp(burst.alpha, 0, 1);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, burst.radius * p.cellW, burst.radius * p.cellH, 0, 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    const pp = pondPoint(player.x, player.z, box);
+    drawGooseMarker(pp, Math.atan2(player.dz, player.dx) + Math.PI / 2, gooseClasses[player.classKey].color);
+    if (player.invuln > 0) {
+      ctx.strokeStyle = "rgba(255,255,255,0.72)";
+      ctx.beginPath();
+      ctx.ellipse(pp.x, pp.y, 18 * pp.scale, 10 * pp.scale, 0, 0, TAU);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "GOOSE GARDEN", `${gooseClasses[player.classKey].name} / ${enemies.length} Unrooted remain`);
+    ctx.restore();
+  }
+
+  function drawSlice(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const sliceY = Number(ui.slice.value);
+    const padding = Math.min(box.w, box.h) * 0.12;
+    const side = Math.min(box.w - padding * 2, box.h - padding * 2);
+    const ox = box.x + (box.w - side) * 0.5;
+    const oy = box.y + (box.h - side) * 0.52;
+    const cell = side / SIZE;
+
+    ctx.fillStyle = "rgba(61, 160, 169, 0.08)";
+    ctx.strokeStyle = "rgba(123, 218, 213, 0.18)";
+    roundedRect(ox - 8, oy - 8, side + 16, side + 16, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const index = id(x, sliceY, z);
+        const upper = spins[id(x, sliceY + 1, z)];
+        const lower = spins[id(x, sliceY - 1, z)];
+        const depthAgreement = (upper === spins[index] ? 0.5 : 0) + (lower === spins[index] ? 0.5 : 0);
+        const inset = 1.4 + (1 - pressure[index]) * 1.8;
+        ctx.fillStyle = colorFor(spins[index], 0.40 + depthAgreement * 0.38, depthAgreement);
+        roundedRect(ox + x * cell + inset, oy + z * cell + inset, cell - inset * 2, cell - inset * 2, 3);
+        ctx.fill();
+
+        if (activity[index] > 0.08) {
+          ctx.strokeStyle = `rgba(255,255,255,${activity[index] * 0.48})`;
+          ctx.stroke();
+        }
+      }
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    for (let i = 0; i <= SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(ox + i * cell, oy);
+      ctx.lineTo(ox + i * cell, oy + side);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + i * cell);
+      ctx.lineTo(ox + side, oy + i * cell);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "TRANSLUCENT SLICE", `depth agreement / Y=${sliceY}`);
+    ctx.restore();
+  }
+
+  function drawVolume(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const sliceY = Number(ui.slice.value);
+    drawGlassPlane(box, sliceY, 0.06, 185);
+    drawGlassPlane(box, clamp(sliceY + 2, 0, SIZE - 1), 0.025, 34);
+
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      screenPoints[i] = { ...project3D(x, y, z, box), index, x, y, z };
+    }
+    screenPoints.sort((a, b) => a.depth - b.depth);
+
+    for (const point of screenPoints) {
+      const nearSlice = Math.abs(point.y - sliceY);
+      const visible = nearSlice === 0 || ((point.x + point.y + point.z) % 2 === 0 && nearSlice < 5);
+      if (!visible) continue;
+      const alpha = nearSlice === 0 ? 0.78 : 0.08 + pressure[point.index] * 0.16;
+      const size = clamp(point.scale * (nearSlice === 0 ? 7 : 4.2), 2, 9);
+      ctx.fillStyle = colorFor(spins[point.index], alpha, pressure[point.index]);
+      roundedRect(point.x - size * 0.5, point.y - size * 0.5, size, size, Math.min(2, size * 0.25));
+      ctx.fill();
+    }
+
+    const cube = [
+      [0,0,0], [SIZE-1,0,0], [SIZE-1,0,SIZE-1], [0,0,SIZE-1],
+      [0,SIZE-1,0], [SIZE-1,SIZE-1,0], [SIZE-1,SIZE-1,SIZE-1], [0,SIZE-1,SIZE-1]
+    ].map(p => project3D(...p, box));
+    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    ctx.strokeStyle = "rgba(164, 233, 220, 0.16)";
+    for (const [a,b] of edges) {
+      ctx.beginPath();
+      ctx.moveTo(cube[a].x, cube[a].y);
+      ctx.lineTo(cube[b].x, cube[b].y);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "TOROIDAL VOLUME", "shared spins / selected glass plane");
+    ctx.restore();
+  }
+
+  function drawSpectrum(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const bars = 24;
+    const pad = Math.min(box.w, box.h) * 0.12;
+    const baseY = box.y + box.h - pad;
+    const barW = (box.w - pad * 2) / bars;
+    for (let i = 0; i < bars; i++) {
+      const wave = Math.sin(elapsed * 2 + i * 0.55) * 0.5 + 0.5;
+      const domain = Math.abs(magnetization) * 0.35 + resonance * 0.55 + micEnergy * wave;
+      const h = (box.h - pad * 2) * clamp(domain * (0.45 + wave * 0.65), 0.04, 1);
+      const hue = 184 + i / bars * 54 + resonance * 60;
+      ctx.fillStyle = `hsla(${hue}, 78%, ${48 + wave * 20}%, ${0.25 + domain * 0.62})`;
+      roundedRect(box.x + pad + i * barW + 1, baseY - h, Math.max(2, barW - 3), h, 3);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = "rgba(255,224,138,0.52)";
+    ctx.beginPath();
+    for (let x = 0; x < box.w - pad * 2; x++) {
+      const t = x / (box.w - pad * 2);
+      const y = box.y + box.h * 0.47 + Math.sin(t * TAU * 3 + elapsed * 2.4) * (12 + resonance * 34) * Math.sin(t * Math.PI);
+      if (x === 0) ctx.moveTo(box.x + pad + x, y);
+      else ctx.lineTo(box.x + pad + x, y);
+    }
+    ctx.stroke();
+
+    if (label) drawPanelLabel(box, "RESONANCE POV", "field energy / mic FFT proxy");
+    ctx.restore();
+  }
+
+  function drawPanelLabel(box, title, sub) {
+    const x = box.x + 12;
+    const y = box.y + 14;
+    ctx.fillStyle = "rgba(3, 11, 14, 0.72)";
+    roundedRect(x - 6, y - 9, Math.min(240, box.w - 18), 35, 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(234,248,244,0.88)";
+    ctx.font = "10px Courier New";
+    ctx.fillText(title, x, y);
+    ctx.fillStyle = "rgba(140,165,172,0.82)";
+    ctx.font = "9px Courier New";
+    ctx.fillText(sub, x, y + 14);
+  }
+
+  function panelFrame(box) {
+    ctx.strokeStyle = "rgba(179,231,221,0.14)";
+    ctx.lineWidth = 1;
+    roundedRect(box.x + 0.5, box.y + 0.5, box.w - 1, box.h - 1, 8);
+    ctx.stroke();
+  }
+
+  function render() {
+    background();
+    const top = W < 880 ? 146 : 104;
+    const bottom = W < 880 ? 178 : 84;
+    const margin = W < 560 ? 8 : 14;
+    const box = { x: margin, y: top, w: W - margin * 2, h: Math.max(140, H - top - bottom) };
+
+    if (view === "pond") drawPond(box);
+    if (view === "slice") drawSlice(box);
+    if (view === "volume") drawVolume(box);
+    if (view === "garden") drawGarden(box);
+    if (view === "parallel") {
+      const gap = 8;
+      const halfW = (box.w - gap) / 2;
+      const halfH = (box.h - gap) / 2;
+      const boxes = [
+        { x: box.x, y: box.y, w: halfW, h: halfH },
+        { x: box.x + halfW + gap, y: box.y, w: halfW, h: halfH },
+        { x: box.x, y: box.y + halfH + gap, w: halfW, h: halfH },
+        { x: box.x + halfW + gap, y: box.y + halfH + gap, w: halfW, h: halfH }
+      ];
+      drawPond(boxes[0]);
+      drawSlice(boxes[1]);
+      drawVolume(boxes[2]);
+      drawSpectrum(boxes[3]);
+      boxes.forEach(panelFrame);
+    }
+  }
+
+  function setView(next) {
+    view = next;
+    document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+    showMessage(`${view} POV selected.`);
+  }
+
+  function setStage(next, manual = true) {
+    stage = clamp(Number(next), 0, stages.length - 1);
+    stageElapsed = 0;
+    document.querySelectorAll("[data-stage]").forEach(button => button.classList.toggle("active", Number(button.dataset.stage) === stage));
+    const config = stages[stage];
+    ui.temp.value = config.temp;
+    ui.coupling.value = config.coupling;
+    ui.flow.value = config.flow;
+    syncSliders();
+    if (manual) autoSequence = false;
+    ui.auto.classList.toggle("active", autoSequence);
+    showMessage(config.message);
+  }
+
+  function syncSliders() {
+    ui.tempOut.textContent = Number(ui.temp.value).toFixed(2);
+    ui.couplingOut.textContent = Number(ui.coupling.value).toFixed(2);
+    ui.flowOut.textContent = Number(ui.flow.value).toFixed(2);
+    ui.sliceOut.textContent = ui.slice.value;
+    ui.sliceDockOut.textContent = ui.slice.value;
+  }
+
+  function showMessage(text) {
+    ui.message.textContent = text;
+    ui.message.classList.add("show");
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(() => ui.message.classList.remove("show"), 2600);
+  }
+
+  function honk() {
+    impulse = 1;
+    const sliceY = Number(ui.slice.value);
+    const cx = Math.floor(Math.random() * SIZE);
+    const cz = Math.floor(Math.random() * SIZE);
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const d = Math.hypot(x - cx, z - cz);
+        if (Math.abs(d - 3) < 1.2) {
+          const index = id(x, sliceY, z);
+          spins[index] = 1;
+          activity[index] = 1;
+        }
+      }
+    }
+    playHonk();
+    showMessage("Honk injected as a ring through the active slice.");
+  }
+
+  function playHonk() {
+    try {
+      const ac = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      audioContext = ac;
+      const now = ac.currentTime;
+      [147, 196, 247].forEach((frequency, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = i === 0 ? "sawtooth" : "sine";
+        osc.frequency.setValueAtTime(frequency, now);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 0.72, now + 0.26);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.035 / (i + 1), now + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.start(now + i * 0.025);
+        osc.stop(now + 0.38);
+      });
+    } catch {}
+  }
+
+  async function toggleMic() {
+    if (micLive) {
+      micStream?.getTracks().forEach(track => track.stop());
+      micLive = false;
+      micEnergy = 0;
+      ui.mic.classList.remove("live");
+      ui.mic.textContent = "Mic resonance";
+      showMessage("Mic resonance released.");
+      return;
+    }
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(micStream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      fftData = new Uint8Array(analyser.frequencyBinCount);
+      source.connect(analyser);
+      micLive = true;
+      ui.mic.classList.add("live");
+      ui.mic.textContent = "Mic live";
+      showMessage("Microphone now heats and biases the shared pond.");
+    } catch {
+      showMessage("Microphone permission was not available.");
+    }
+  }
+
+  function updateMic() {
+    if (!micLive || !analyser) {
+      micEnergy *= 0.92;
+      return;
+    }
+    analyser.getByteFrequencyData(fftData);
+    let sum = 0;
+    for (let i = 2; i < 38; i++) sum += fftData[i];
+    const next = sum / (36 * 255);
+    micEnergy += (next - micEnergy) * 0.2;
+  }
+
+  function saveState() {
+    const state = {
+      version: 2,
+      spins: Array.from(spins),
+      slice: Number(ui.slice.value),
+      stage,
+      view,
+      player,
+      wave,
+      waveLive,
+      gardenHealth,
+      enemies,
+      eggs,
+      reeds
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showMessage("Current pond state saved locally.");
+  }
+
+  function recallState() {
+    try {
+      const state = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!state || !Array.isArray(state.spins) || state.spins.length !== COUNT) throw new Error();
+      spins.set(state.spins);
+      ui.slice.value = state.slice ?? 6;
+      if (state.player) Object.assign(player, state.player);
+      wave = state.wave ?? 0;
+      waveLive = Boolean(state.waveLive);
+      gardenHealth = state.gardenHealth ?? 100;
+      enemies.splice(0, enemies.length, ...(state.enemies || []));
+      eggs.splice(0, eggs.length, ...(state.eggs || []));
+      reeds.splice(0, reeds.length, ...(state.reeds || []));
+      setStage(state.stage ?? 0, true);
+      setView(state.view || "pond");
+      setClass(player.classKey || "fpx");
+      syncSliders();
+      updateBattleHud();
+      showMessage("Saved garden battle recalled into every POV.");
+    } catch {
+      showMessage("No compatible saved pond was found.");
+    }
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
+    lastFrame = now;
+    orbit += (orbitTarget - orbit) * 0.08;
+    updateMic();
+
+    if (running) {
+      elapsed += dt;
+      stageElapsed += dt;
+      simulationStep(dt);
+      battleStep(dt);
+      if (autoSequence && stageElapsed > 12 && stage < stages.length - 1) setStage(stage + 1, false);
+    }
+
+    if (now - lastTelemetry > 180) {
+      computeTelemetry();
+      lastTelemetry = now;
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll("[data-view]").forEach(button => button.addEventListener("click", () => setView(button.dataset.view)));
+  document.querySelectorAll("[data-stage]").forEach(button => button.addEventListener("click", () => setStage(button.dataset.stage, true)));
+  document.querySelectorAll("[data-class]").forEach(button => button.addEventListener("click", () => setClass(button.dataset.class)));
+  [ui.temp, ui.coupling, ui.flow, ui.slice].forEach(input => input.addEventListener("input", syncSliders));
+  ui.primary.addEventListener("click", primaryAction);
+  ui.ability.addEventListener("click", specialAction);
+  ui.waveBtn.addEventListener("click", spawnWave);
+  ui.mic.addEventListener("click", toggleMic);
+  ui.pause.addEventListener("click", () => {
+    running = !running;
+    ui.pause.textContent = running ? "Pause" : "Resume";
+    ui.pause.classList.toggle("active", !running);
+  });
+  ui.auto.addEventListener("click", () => {
+    autoSequence = !autoSequence;
+    ui.auto.classList.toggle("active", autoSequence);
+    showMessage(autoSequence ? "Automatic pond sequence resumed." : "Sequence held at current state.");
+  });
+  document.getElementById("loadPresetBtn").addEventListener("click", () => preset(ui.preset.value));
+  document.getElementById("scatterBtn").addEventListener("click", scatter);
+  document.getElementById("saveBtn").addEventListener("click", saveState);
+  document.getElementById("recallBtn").addEventListener("click", recallState);
+
+  window.addEventListener("keydown", event => {
+    keys.add(event.code);
+    if (event.key >= "1" && event.key <= "5") setView(["pond", "slice", "volume", "parallel", "garden"][Number(event.key) - 1]);
+    if (event.key === " ") { event.preventDefault(); primaryAction(); }
+    if (event.key.toLowerCase() === "e") specialAction();
+    if (event.key.toLowerCase() === "q") {
+      const classKeys = Object.keys(gooseClasses);
+      setClass(classKeys[(classKeys.indexOf(player.classKey) + 1) % classKeys.length]);
+    }
+    if (event.key.toLowerCase() === "p") ui.pause.click();
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      const delta = event.key === "ArrowUp" ? 1 : -1;
+      ui.slice.value = clamp(Number(ui.slice.value) + delta, 0, SIZE - 1);
+      syncSliders();
+    }
+  });
+  window.addEventListener("keyup", event => keys.delete(event.code));
+
+  canvas.addEventListener("pointerdown", event => {
+    dragging = true;
+    lastPointerX = event.clientX;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointermove", event => {
+    if (!dragging) return;
+    orbitTarget += (event.clientX - lastPointerX) * 0.008;
+    lastPointerX = event.clientX;
+  });
+  canvas.addEventListener("pointerup", () => dragging = false);
+  canvas.addEventListener("dblclick", primaryAction);
+  window.addEventListener("resize", resize);
+  window.addEventListener("beforeunload", () => micStream?.getTracks().forEach(track => track.stop()));
+
+  initArrays();
+  preset("goose_trace");
+  resize();
+  syncSliders();
+  setStage(0, false);
+  setClass("fpx");
+  updateBattleHud();
+  setView("garden");
+  spawnWave();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

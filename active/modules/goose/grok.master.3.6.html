@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sphera Pond Atlas 3.6</title>
+<style>
+  :root {
+    --ink: #eaf8f4;
+    --muted: #8ca5ac;
+    --line: rgba(179, 231, 221, 0.18);
+    --glass: rgba(7, 18, 23, 0.78);
+    --glass-strong: rgba(6, 15, 20, 0.94);
+    --warm: #ffad66;
+    --cool: #66d9e8;
+    --lime: #b7f09c;
+    --yellow: #ffe08a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink);
+    background: #030b0e;
+    font-family: "Courier New", monospace;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mix-blend-mode: overlay;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  button, input, select { font: inherit; }
+
+  button {
+    min-height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 11px;
+    color: var(--ink);
+    background: rgba(255,255,255,0.055);
+    cursor: pointer;
+  }
+
+  button:hover, button:focus-visible {
+    border-color: rgba(255, 224, 138, 0.72);
+    background: rgba(255, 224, 138, 0.11);
+    outline: none;
+  }
+
+  button.active {
+    color: #061014;
+    border-color: var(--yellow);
+    background: var(--yellow);
+  }
+
+  .chrome {
+    position: fixed;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .chrome button, .chrome input, .chrome select { pointer-events: auto; }
+
+  #header {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) auto minmax(210px, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--glass);
+    box-shadow: 0 14px 46px rgba(0,0,0,0.28);
+    backdrop-filter: blur(14px);
+  }
+
+  #identity {
+    width: fit-content;
+    max-width: 440px;
+    padding: 12px 14px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    color: var(--lime);
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: normal;
+    letter-spacing: 0;
+  }
+
+  #identity p {
+    max-width: 55ch;
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  #viewTabs {
+    justify-self: center;
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+  }
+
+  #viewTabs button { min-width: 72px; }
+
+  #telemetry {
+    justify-self: end;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(62px, 1fr));
+    gap: 1px;
+    overflow: hidden;
+  }
+
+  .metric {
+    min-width: 72px;
+    padding: 9px 10px;
+    background: rgba(255,255,255,0.025);
+  }
+
+  .metric label {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+
+  .metric output {
+    display: block;
+    margin-top: 3px;
+    color: var(--yellow);
+    font-size: 15px;
+  }
+
+  #stageRail {
+    top: 112px;
+    left: 14px;
+    display: grid;
+    gap: 4px;
+    width: 116px;
+    padding: 7px;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: 12px 1fr;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 5px 7px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: left;
+  }
+
+  .stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.035);
+  }
+
+  .stage.active {
+    color: #071114;
+    background: var(--lime);
+    border-color: var(--lime);
+  }
+
+  #sliceReadout {
+    top: 112px;
+    right: 14px;
+    width: 176px;
+    padding: 10px 12px;
+  }
+
+  #sliceReadout .slice-value {
+    margin: 4px 0 7px;
+    color: var(--cool);
+    font-family: Georgia, serif;
+    font-size: 28px;
+  }
+
+  #sliceReadout p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  #dock {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    display: grid;
+    grid-template-columns: auto minmax(280px, 1fr) auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .dock-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    min-height: 48px;
+    padding: 6px;
+  }
+
+  #honkBtn {
+    min-width: 104px;
+    color: #071114;
+    border-color: var(--warm);
+    background: var(--warm);
+    font-weight: bold;
+  }
+
+  #micBtn.live {
+    color: #061014;
+    background: var(--cool);
+    animation: breathe 0.9s ease-in-out infinite alternate;
+  }
+
+  @keyframes breathe {
+    to { box-shadow: 0 0 20px rgba(102,217,232,0.48); }
+  }
+
+  .slider {
+    display: grid;
+    grid-template-columns: auto minmax(58px, 1fr) 32px;
+    align-items: center;
+    gap: 5px;
+    min-width: 132px;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--yellow);
+  }
+
+  .slider output { color: var(--ink); text-align: right; }
+
+  #message {
+    position: fixed;
+    left: 50%;
+    bottom: 84px;
+    z-index: 5;
+    max-width: min(640px, calc(100vw - 28px));
+    transform: translateX(-50%);
+    border: 1px solid rgba(255,224,138,0.28);
+    border-radius: 6px;
+    padding: 7px 11px;
+    color: var(--yellow);
+    background: rgba(5,14,18,0.86);
+    font-size: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  #message.show { opacity: 1; }
+
+  @media (max-width: 880px) {
+    #header {
+      grid-template-columns: 1fr auto;
+    }
+    #identity p { display: none; }
+    #viewTabs {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-self: stretch;
+    }
+    #viewTabs button { flex: 1; min-width: 0; }
+    #telemetry { grid-template-columns: repeat(3, 1fr); }
+    #stageRail { top: 150px; }
+    #sliceReadout { top: 150px; }
+    #dock {
+      grid-template-columns: 1fr;
+      max-height: 31vh;
+      overflow: auto;
+    }
+    .dock-group { justify-content: center; }
+    #message { bottom: 176px; }
+  }
+
+  @media (max-width: 560px) {
+    #header { left: 8px; right: 8px; top: 8px; }
+    #identity { padding: 9px 10px; }
+    h1 { font-size: 19px; }
+    #telemetry .metric { min-width: 52px; padding: 7px; }
+    #stageRail { display: none; }
+    #sliceReadout {
+      top: 122px;
+      right: 8px;
+      width: 132px;
+      padding: 8px;
+    }
+    #sliceReadout p { display: none; }
+    #dock { left: 8px; right: 8px; bottom: 8px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="pond"></canvas>
+
+<header id="header" class="chrome">
+  <section id="identity" class="panel">
+    <div class="eyebrow">Sphera / pond.pool.L / master 3.6</div>
+    <h1>Pond Atlas</h1>
+    <p>One toroidal Ising pond, observed through sequential states and parallel points of view.</p>
+  </section>
+
+  <nav id="viewTabs" class="panel" aria-label="Pond view">
+    <button data-view="pond" class="active">Pond</button>
+    <button data-view="slice">Slice</button>
+    <button data-view="volume">Volume</button>
+    <button data-view="parallel">Parallel</button>
+  </nav>
+
+  <section id="telemetry" class="panel">
+    <div class="metric"><label>magnet</label><output id="magOut">0.00</output></div>
+    <div class="metric"><label>energy</label><output id="energyOut">0.00</output></div>
+    <div class="metric"><label>resonance</label><output id="resOut">0.00</output></div>
+  </section>
+</header>
+
+<aside id="stageRail" class="chrome panel" aria-label="Pond sequence">
+  <button class="stage active" data-stage="0"><span class="stage-dot"></span>seed</button>
+  <button class="stage" data-stage="1"><span class="stage-dot"></span>cluster</button>
+  <button class="stage" data-stage="2"><span class="stage-dot"></span>resonate</button>
+  <button class="stage" data-stage="3"><span class="stage-dot"></span>bloom</button>
+</aside>
+
+<aside id="sliceReadout" class="chrome panel">
+  <div class="eyebrow">Active slicer</div>
+  <div class="slice-value">Y <span id="sliceOut">6</span></div>
+  <p>Arrow up/down changes depth. All views read the same shared pond state.</p>
+</aside>
+
+<footer id="dock" class="chrome">
+  <section class="dock-group panel">
+    <button id="honkBtn">HONK / inject</button>
+    <button id="micBtn">Mic resonance</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="autoBtn" class="active">Auto sequence</button>
+  </section>
+
+  <section class="dock-group panel">
+    <label class="slider">temperature <input id="tempInput" type="range" min="0.15" max="4" step="0.01" value="1.25"><output id="tempOut">1.25</output></label>
+    <label class="slider">coupling <input id="couplingInput" type="range" min="0.2" max="2.4" step="0.01" value="1.00"><output id="couplingOut">1.00</output></label>
+    <label class="slider">flow <input id="flowInput" type="range" min="0" max="2.5" step="0.01" value="0.85"><output id="flowOut">0.85</output></label>
+    <label class="slider">slice <input id="sliceInput" type="range" min="0" max="11" step="1" value="6"><output id="sliceDockOut">6</output></label>
+  </section>
+
+  <section class="dock-group panel">
+    <select id="presetSelect" aria-label="Pond preset">
+      <option value="goose_trace">goose trace</option>
+      <option value="frozen_pond">frozen pond</option>
+      <option value="harmonic_glide">harmonic glide</option>
+      <option value="storm_cell">storm cell</option>
+    </select>
+    <button id="loadPresetBtn">Load</button>
+    <button id="scatterBtn">Scatter</button>
+    <button id="saveBtn">Save</button>
+    <button id="recallBtn">Recall</button>
+  </section>
+</footer>
+
+<div id="message"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("pond");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const SIZE = 12;
+  const COUNT = SIZE * SIZE * SIZE;
+  const TAU = Math.PI * 2;
+  const STORAGE_KEY = "sphera.pond.atlas.3.6";
+  const stages = [
+    { name: "seed", temp: 2.65, coupling: 0.58, flow: 0.45, steps: 6, field: 0.00, message: "Seed state: independent spins feel out the pond." },
+    { name: "cluster", temp: 1.55, coupling: 1.05, flow: 0.72, steps: 10, field: 0.02, message: "Cluster state: fellow colors find one another." },
+    { name: "resonate", temp: 0.96, coupling: 1.34, flow: 1.18, steps: 14, field: 0.08, message: "Resonant state: slices begin to agree across depth." },
+    { name: "bloom", temp: 0.58, coupling: 1.68, flow: 1.52, steps: 18, field: 0.14, message: "Bloom state: the pond holds a coherent memory." }
+  ];
+
+  const spins = new Int8Array(COUNT);
+  const nextSpins = new Int8Array(COUNT);
+  const phase = new Float32Array(COUNT);
+  const pressure = new Float32Array(COUNT);
+  const activity = new Float32Array(COUNT);
+  const screenPoints = new Array(COUNT);
+  let W = 1;
+  let H = 1;
+  let DPR = 1;
+  let view = "pond";
+  let stage = 0;
+  let autoSequence = true;
+  let running = true;
+  let elapsed = 0;
+  let stageElapsed = 0;
+  let impulse = 0;
+  let micEnergy = 0;
+  let micLive = false;
+  let audioContext = null;
+  let analyser = null;
+  let micStream = null;
+  let fftData = null;
+  let lastFrame = performance.now();
+  let lastTelemetry = 0;
+  let messageTimer = 0;
+  let magnetization = 0;
+  let meanEnergy = 0;
+  let resonance = 0;
+  let orbit = 0.45;
+  let orbitTarget = orbit;
+  let dragging = false;
+  let lastPointerX = 0;
+
+  const ui = {
+    mag: document.getElementById("magOut"),
+    energy: document.getElementById("energyOut"),
+    res: document.getElementById("resOut"),
+    temp: document.getElementById("tempInput"),
+    coupling: document.getElementById("couplingInput"),
+    flow: document.getElementById("flowInput"),
+    slice: document.getElementById("sliceInput"),
+    tempOut: document.getElementById("tempOut"),
+    couplingOut: document.getElementById("couplingOut"),
+    flowOut: document.getElementById("flowOut"),
+    sliceOut: document.getElementById("sliceOut"),
+    sliceDockOut: document.getElementById("sliceDockOut"),
+    message: document.getElementById("message"),
+    mic: document.getElementById("micBtn"),
+    pause: document.getElementById("pauseBtn"),
+    auto: document.getElementById("autoBtn"),
+    preset: document.getElementById("presetSelect")
+  };
+
+  function id(x, y, z) {
+    return ((x + SIZE) % SIZE) * SIZE * SIZE + ((y + SIZE) % SIZE) * SIZE + ((z + SIZE) % SIZE);
+  }
+
+  function coords(index) {
+    const x = Math.floor(index / (SIZE * SIZE));
+    const rest = index % (SIZE * SIZE);
+    return [x, Math.floor(rest / SIZE), rest % SIZE];
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function hashNoise(x, y, z, seed = 0) {
+    const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + seed * 19.19) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
+  function initArrays() {
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      spins[i] = hashNoise(x, y, z, 3) > 0.5 ? 1 : -1;
+      phase[i] = hashNoise(x, y, z, 7) * TAU;
+      pressure[i] = 0;
+      activity[i] = 0;
+    }
+  }
+
+  function preset(name) {
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      const nx = (x - SIZE / 2) / SIZE;
+      const ny = (y - SIZE / 2) / SIZE;
+      const nz = (z - SIZE / 2) / SIZE;
+      let value = 0;
+
+      if (name === "frozen_pond") value = 1;
+      if (name === "harmonic_glide") value = Math.sin(x * 0.72) + Math.cos(y * 0.62) + Math.sin(z * 0.84);
+      if (name === "storm_cell") value = Math.sin((nx * nx + nz * nz) * 72 - y * 0.9) + hashNoise(x, y, z, 11) - 0.35;
+      if (name === "goose_trace") {
+        const body = ((nx + 0.08) * (nx + 0.08)) / 0.095 + ((nz + 0.02) * (nz + 0.02)) / 0.038 < 1;
+        const neck = nx > 0.09 && nx < 0.28 && Math.abs(nz - (nx - 0.09) * 0.35) < 0.07;
+        const head = (nx - 0.29) * (nx - 0.29) + (nz - 0.08) * (nz - 0.08) < 0.012;
+        const wing = ((nx + 0.10) * (nx + 0.10)) / 0.036 + ((nz + 0.02) * (nz + 0.02)) / 0.014 < 1;
+        value = (body || neck || head) && !wing ? 1 : -1;
+        value += Math.sin(y * 0.8 + x * 0.3) * 0.15;
+      }
+
+      spins[i] = value >= 0 ? 1 : -1;
+      pressure[i] = 0;
+      activity[i] = 0;
+    }
+    showMessage(`${name.replaceAll("_", " ")} loaded into every POV.`);
+  }
+
+  function scatter() {
+    for (let i = 0; i < COUNT; i++) {
+      spins[i] = Math.random() > 0.5 ? 1 : -1;
+      activity[i] = 1;
+    }
+    showMessage("Pond scattered. Same state, four readings.");
+  }
+
+  function neighborSum(x, y, z) {
+    return spins[id(x + 1, y, z)] + spins[id(x - 1, y, z)] +
+      spins[id(x, y + 1, z)] + spins[id(x, y - 1, z)] +
+      spins[id(x, y, z + 1)] + spins[id(x, y, z - 1)];
+  }
+
+  function simulationStep(dt) {
+    const config = stages[stage];
+    const temperature = Number(ui.temp.value) + micEnergy * 1.6 + impulse * 0.45;
+    const coupling = Number(ui.coupling.value);
+    const steps = Math.max(2, Math.floor(config.steps + Number(ui.flow.value) * 5 + micEnergy * 18));
+    const externalField = config.field + micEnergy * 0.12 + impulse * 0.2;
+
+    for (let n = 0; n < steps; n++) {
+      const index = Math.floor(Math.random() * COUNT);
+      const [x, y, z] = coords(index);
+      const sum = neighborSum(x, y, z);
+      const dE = 2 * spins[index] * (sum * coupling + externalField);
+      if (dE <= 0 || Math.random() < Math.exp(-dE / Math.max(0.08, temperature))) {
+        spins[index] *= -1;
+        activity[index] = 1;
+        pressure[index] = clamp(Math.abs(sum) / 6, 0, 1);
+      }
+    }
+
+    const drift = Number(ui.flow.value) * dt;
+    for (let i = 0; i < COUNT; i++) {
+      activity[i] *= Math.pow(0.025, dt);
+      pressure[i] += (Math.abs(neighborSum(...coords(i))) / 6 - pressure[i]) * dt * 1.8;
+      phase[i] += drift * (0.45 + pressure[i] * 0.75);
+    }
+    impulse *= Math.pow(0.045, dt);
+  }
+
+  function computeTelemetry() {
+    let mag = 0;
+    let energy = 0;
+    let sliceAgreement = 0;
+    const sliceY = Number(ui.slice.value);
+
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      mag += spins[i];
+      energy += -spins[i] * neighborSum(x, y, z) / 12;
+      if (y === sliceY) {
+        sliceAgreement += spins[i] === spins[id(x, y + 1, z)] ? 1 : -1;
+      }
+    }
+
+    magnetization = mag / COUNT;
+    meanEnergy = energy / COUNT;
+    resonance = clamp(Math.abs(sliceAgreement) / (SIZE * SIZE) * 0.65 + Math.abs(magnetization) * 0.35 + micEnergy * 0.2, 0, 1);
+    ui.mag.textContent = magnetization.toFixed(2);
+    ui.energy.textContent = meanEnergy.toFixed(2);
+    ui.res.textContent = resonance.toFixed(2);
+  }
+
+  function resize() {
+    DPR = clamp(window.devicePixelRatio || 1, 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  }
+
+  function background() {
+    const g = ctx.createRadialGradient(W * 0.52, H * 0.48, 20, W * 0.52, H * 0.48, Math.max(W, H) * 0.7);
+    g.addColorStop(0, `hsl(${184 + resonance * 34} 42% ${10 + resonance * 5}%)`);
+    g.addColorStop(0.56, "#061217");
+    g.addColorStop(1, "#020709");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "rgba(126, 209, 194, 0.035)";
+    ctx.lineWidth = 1;
+    const gap = 42;
+    for (let x = (elapsed * 6) % gap; x < W; x += gap) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+  }
+
+  function colorFor(spin, alpha = 1, glow = 0) {
+    if (spin > 0) return `hsla(${28 + glow * 18}, ${78 + glow * 18}%, ${58 + glow * 16}%, ${alpha})`;
+    return `hsla(${185 + glow * 24}, ${68 + glow * 20}%, ${51 + glow * 18}%, ${alpha})`;
+  }
+
+  function project3D(x, y, z, box, scale = 1) {
+    const cx = box.x + box.w * 0.5;
+    const cy = box.y + box.h * 0.52;
+    const nx = (x - (SIZE - 1) / 2) / SIZE;
+    const ny = (y - (SIZE - 1) / 2) / SIZE;
+    const nz = (z - (SIZE - 1) / 2) / SIZE;
+    const ca = Math.cos(orbit);
+    const sa = Math.sin(orbit);
+    const rx = nx * ca - nz * sa;
+    const rz = nx * sa + nz * ca;
+    const perspective = 1 / (1.35 + rz * 0.5);
+    const unit = Math.min(box.w, box.h) * 0.76 * scale;
+    return {
+      x: cx + rx * unit * perspective,
+      y: cy + (ny * -0.78 + rz * 0.30) * unit * perspective,
+      depth: rz + ny * 0.15,
+      scale: perspective
+    };
+  }
+
+  function drawGlassPlane(box, yLevel, alpha, hue) {
+    const corners = [
+      project3D(0, yLevel, 0, box),
+      project3D(SIZE - 1, yLevel, 0, box),
+      project3D(SIZE - 1, yLevel, SIZE - 1, box),
+      project3D(0, yLevel, SIZE - 1, box)
+    ];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i = 1; i < corners.length; i++) ctx.lineTo(corners[i].x, corners[i].y);
+    ctx.closePath();
+    ctx.fillStyle = `hsla(${hue}, 68%, 58%, ${alpha})`;
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${hue}, 78%, 74%, ${alpha * 2.6})`;
+    ctx.stroke();
+  }
+
+  function drawPond(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const cx = box.x + box.w * 0.5;
+    const cy = box.y + box.h * 0.56;
+    const radius = Math.min(box.w, box.h) * 0.38;
+    const pondGrad = ctx.createRadialGradient(cx, cy, radius * 0.12, cx, cy, radius);
+    pondGrad.addColorStop(0, `rgba(67, 191, 181, ${0.18 + resonance * 0.14})`);
+    pondGrad.addColorStop(0.72, "rgba(30, 91, 100, 0.22)");
+    pondGrad.addColorStop(1, "rgba(8, 28, 34, 0.04)");
+    ctx.fillStyle = pondGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, radius * 1.22, radius * 0.72, 0, 0, TAU);
+    ctx.fill();
+
+    const sliceY = Number(ui.slice.value);
+    const cellW = radius * 2.05 / SIZE;
+    const cellH = radius * 1.2 / SIZE;
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const index = id(x, sliceY, z);
+        const hop = Math.sin(elapsed * 2.6 + phase[index]) * (3 + Number(ui.flow.value) * 2) * (0.35 + pressure[index] * 0.65);
+        const px = cx + (x - (SIZE - 1) / 2) * cellW + (z - SIZE / 2) * cellW * 0.11;
+        const py = cy + (z - (SIZE - 1) / 2) * cellH + hop;
+        const agree = pressure[index];
+        ctx.fillStyle = colorFor(spins[index], 0.30 + agree * 0.55, agree);
+        ctx.strokeStyle = colorFor(spins[index], 0.15 + agree * 0.28, agree);
+        roundedRect(px - cellW * 0.38, py - cellH * 0.34, cellW * 0.76, cellH * 0.68, 3);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    for (let ring = 0; ring < 4; ring++) {
+      const expansion = ((elapsed * 34 + ring * radius * 0.32) % (radius * 1.18));
+      ctx.strokeStyle = `rgba(255, 224, 138, ${Math.max(0, 0.18 - expansion / radius * 0.13 + impulse * 0.18)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, expansion * 1.22, expansion * 0.72, 0, 0, TAU);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "SURFACE POND", `Y=${sliceY} / hopping domains`);
+    ctx.restore();
+  }
+
+  function drawSlice(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const sliceY = Number(ui.slice.value);
+    const padding = Math.min(box.w, box.h) * 0.12;
+    const side = Math.min(box.w - padding * 2, box.h - padding * 2);
+    const ox = box.x + (box.w - side) * 0.5;
+    const oy = box.y + (box.h - side) * 0.52;
+    const cell = side / SIZE;
+
+    ctx.fillStyle = "rgba(61, 160, 169, 0.08)";
+    ctx.strokeStyle = "rgba(123, 218, 213, 0.18)";
+    roundedRect(ox - 8, oy - 8, side + 16, side + 16, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const index = id(x, sliceY, z);
+        const upper = spins[id(x, sliceY + 1, z)];
+        const lower = spins[id(x, sliceY - 1, z)];
+        const depthAgreement = (upper === spins[index] ? 0.5 : 0) + (lower === spins[index] ? 0.5 : 0);
+        const inset = 1.4 + (1 - pressure[index]) * 1.8;
+        ctx.fillStyle = colorFor(spins[index], 0.40 + depthAgreement * 0.38, depthAgreement);
+        roundedRect(ox + x * cell + inset, oy + z * cell + inset, cell - inset * 2, cell - inset * 2, 3);
+        ctx.fill();
+
+        if (activity[index] > 0.08) {
+          ctx.strokeStyle = `rgba(255,255,255,${activity[index] * 0.48})`;
+          ctx.stroke();
+        }
+      }
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    for (let i = 0; i <= SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(ox + i * cell, oy);
+      ctx.lineTo(ox + i * cell, oy + side);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + i * cell);
+      ctx.lineTo(ox + side, oy + i * cell);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "TRANSLUCENT SLICE", `depth agreement / Y=${sliceY}`);
+    ctx.restore();
+  }
+
+  function drawVolume(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const sliceY = Number(ui.slice.value);
+    drawGlassPlane(box, sliceY, 0.06, 185);
+    drawGlassPlane(box, clamp(sliceY + 2, 0, SIZE - 1), 0.025, 34);
+
+    for (let i = 0; i < COUNT; i++) {
+      const [x, y, z] = coords(i);
+      screenPoints[i] = { ...project3D(x, y, z, box), index, x, y, z };
+    }
+    screenPoints.sort((a, b) => a.depth - b.depth);
+
+    for (const point of screenPoints) {
+      const nearSlice = Math.abs(point.y - sliceY);
+      const visible = nearSlice === 0 || ((point.x + point.y + point.z) % 2 === 0 && nearSlice < 5);
+      if (!visible) continue;
+      const alpha = nearSlice === 0 ? 0.78 : 0.08 + pressure[point.index] * 0.16;
+      const size = clamp(point.scale * (nearSlice === 0 ? 7 : 4.2), 2, 9);
+      ctx.fillStyle = colorFor(spins[point.index], alpha, pressure[point.index]);
+      roundedRect(point.x - size * 0.5, point.y - size * 0.5, size, size, Math.min(2, size * 0.25));
+      ctx.fill();
+    }
+
+    const cube = [
+      [0,0,0], [SIZE-1,0,0], [SIZE-1,0,SIZE-1], [0,0,SIZE-1],
+      [0,SIZE-1,0], [SIZE-1,SIZE-1,0], [SIZE-1,SIZE-1,SIZE-1], [0,SIZE-1,SIZE-1]
+    ].map(p => project3D(...p, box));
+    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    ctx.strokeStyle = "rgba(164, 233, 220, 0.16)";
+    for (const [a,b] of edges) {
+      ctx.beginPath();
+      ctx.moveTo(cube[a].x, cube[a].y);
+      ctx.lineTo(cube[b].x, cube[b].y);
+      ctx.stroke();
+    }
+
+    if (label) drawPanelLabel(box, "TOROIDAL VOLUME", "shared spins / selected glass plane");
+    ctx.restore();
+  }
+
+  function drawSpectrum(box, label = true) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
+
+    const bars = 24;
+    const pad = Math.min(box.w, box.h) * 0.12;
+    const baseY = box.y + box.h - pad;
+    const barW = (box.w - pad * 2) / bars;
+    for (let i = 0; i < bars; i++) {
+      const wave = Math.sin(elapsed * 2 + i * 0.55) * 0.5 + 0.5;
+      const domain = Math.abs(magnetization) * 0.35 + resonance * 0.55 + micEnergy * wave;
+      const h = (box.h - pad * 2) * clamp(domain * (0.45 + wave * 0.65), 0.04, 1);
+      const hue = 184 + i / bars * 54 + resonance * 60;
+      ctx.fillStyle = `hsla(${hue}, 78%, ${48 + wave * 20}%, ${0.25 + domain * 0.62})`;
+      roundedRect(box.x + pad + i * barW + 1, baseY - h, Math.max(2, barW - 3), h, 3);
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = "rgba(255,224,138,0.52)";
+    ctx.beginPath();
+    for (let x = 0; x < box.w - pad * 2; x++) {
+      const t = x / (box.w - pad * 2);
+      const y = box.y + box.h * 0.47 + Math.sin(t * TAU * 3 + elapsed * 2.4) * (12 + resonance * 34) * Math.sin(t * Math.PI);
+      if (x === 0) ctx.moveTo(box.x + pad + x, y);
+      else ctx.lineTo(box.x + pad + x, y);
+    }
+    ctx.stroke();
+
+    if (label) drawPanelLabel(box, "RESONANCE POV", "field energy / mic FFT proxy");
+    ctx.restore();
+  }
+
+  function drawPanelLabel(box, title, sub) {
+    const x = box.x + 12;
+    const y = box.y + 14;
+    ctx.fillStyle = "rgba(3, 11, 14, 0.72)";
+    roundedRect(x - 6, y - 9, Math.min(240, box.w - 18), 35, 5);
+    ctx.fill();
+    ctx.fillStyle = "rgba(234,248,244,0.88)";
+    ctx.font = "10px Courier New";
+    ctx.fillText(title, x, y);
+    ctx.fillStyle = "rgba(140,165,172,0.82)";
+    ctx.font = "9px Courier New";
+    ctx.fillText(sub, x, y + 14);
+  }
+
+  function panelFrame(box) {
+    ctx.strokeStyle = "rgba(179,231,221,0.14)";
+    ctx.lineWidth = 1;
+    roundedRect(box.x + 0.5, box.y + 0.5, box.w - 1, box.h - 1, 8);
+    ctx.stroke();
+  }
+
+  function render() {
+    background();
+    const top = W < 880 ? 146 : 104;
+    const bottom = W < 880 ? 178 : 84;
+    const margin = W < 560 ? 8 : 14;
+    const box = { x: margin, y: top, w: W - margin * 2, h: Math.max(140, H - top - bottom) };
+
+    if (view === "pond") drawPond(box);
+    if (view === "slice") drawSlice(box);
+    if (view === "volume") drawVolume(box);
+    if (view === "parallel") {
+      const gap = 8;
+      const halfW = (box.w - gap) / 2;
+      const halfH = (box.h - gap) / 2;
+      const boxes = [
+        { x: box.x, y: box.y, w: halfW, h: halfH },
+        { x: box.x + halfW + gap, y: box.y, w: halfW, h: halfH },
+        { x: box.x, y: box.y + halfH + gap, w: halfW, h: halfH },
+        { x: box.x + halfW + gap, y: box.y + halfH + gap, w: halfW, h: halfH }
+      ];
+      drawPond(boxes[0]);
+      drawSlice(boxes[1]);
+      drawVolume(boxes[2]);
+      drawSpectrum(boxes[3]);
+      boxes.forEach(panelFrame);
+    }
+  }
+
+  function setView(next) {
+    view = next;
+    document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+    showMessage(`${view} POV selected.`);
+  }
+
+  function setStage(next, manual = true) {
+    stage = clamp(Number(next), 0, stages.length - 1);
+    stageElapsed = 0;
+    document.querySelectorAll("[data-stage]").forEach(button => button.classList.toggle("active", Number(button.dataset.stage) === stage));
+    const config = stages[stage];
+    ui.temp.value = config.temp;
+    ui.coupling.value = config.coupling;
+    ui.flow.value = config.flow;
+    syncSliders();
+    if (manual) autoSequence = false;
+    ui.auto.classList.toggle("active", autoSequence);
+    showMessage(config.message);
+  }
+
+  function syncSliders() {
+    ui.tempOut.textContent = Number(ui.temp.value).toFixed(2);
+    ui.couplingOut.textContent = Number(ui.coupling.value).toFixed(2);
+    ui.flowOut.textContent = Number(ui.flow.value).toFixed(2);
+    ui.sliceOut.textContent = ui.slice.value;
+    ui.sliceDockOut.textContent = ui.slice.value;
+  }
+
+  function showMessage(text) {
+    ui.message.textContent = text;
+    ui.message.classList.add("show");
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(() => ui.message.classList.remove("show"), 2600);
+  }
+
+  function honk() {
+    impulse = 1;
+    const sliceY = Number(ui.slice.value);
+    const cx = Math.floor(Math.random() * SIZE);
+    const cz = Math.floor(Math.random() * SIZE);
+    for (let z = 0; z < SIZE; z++) {
+      for (let x = 0; x < SIZE; x++) {
+        const d = Math.hypot(x - cx, z - cz);
+        if (Math.abs(d - 3) < 1.2) {
+          const index = id(x, sliceY, z);
+          spins[index] = 1;
+          activity[index] = 1;
+        }
+      }
+    }
+    playHonk();
+    showMessage("Honk injected as a ring through the active slice.");
+  }
+
+  function playHonk() {
+    try {
+      const ac = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      audioContext = ac;
+      const now = ac.currentTime;
+      [147, 196, 247].forEach((frequency, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = i === 0 ? "sawtooth" : "sine";
+        osc.frequency.setValueAtTime(frequency, now);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 0.72, now + 0.26);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.035 / (i + 1), now + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.start(now + i * 0.025);
+        osc.stop(now + 0.38);
+      });
+    } catch {}
+  }
+
+  async function toggleMic() {
+    if (micLive) {
+      micStream?.getTracks().forEach(track => track.stop());
+      micLive = false;
+      micEnergy = 0;
+      ui.mic.classList.remove("live");
+      ui.mic.textContent = "Mic resonance";
+      showMessage("Mic resonance released.");
+      return;
+    }
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(micStream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      fftData = new Uint8Array(analyser.frequencyBinCount);
+      source.connect(analyser);
+      micLive = true;
+      ui.mic.classList.add("live");
+      ui.mic.textContent = "Mic live";
+      showMessage("Microphone now heats and biases the shared pond.");
+    } catch {
+      showMessage("Microphone permission was not available.");
+    }
+  }
+
+  function updateMic() {
+    if (!micLive || !analyser) {
+      micEnergy *= 0.92;
+      return;
+    }
+    analyser.getByteFrequencyData(fftData);
+    let sum = 0;
+    for (let i = 2; i < 38; i++) sum += fftData[i];
+    const next = sum / (36 * 255);
+    micEnergy += (next - micEnergy) * 0.2;
+  }
+
+  function saveState() {
+    const state = {
+      version: 1,
+      spins: Array.from(spins),
+      slice: Number(ui.slice.value),
+      stage,
+      view
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showMessage("Current pond state saved locally.");
+  }
+
+  function recallState() {
+    try {
+      const state = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!state || !Array.isArray(state.spins) || state.spins.length !== COUNT) throw new Error();
+      spins.set(state.spins);
+      ui.slice.value = state.slice ?? 6;
+      setStage(state.stage ?? 0, true);
+      setView(state.view || "pond");
+      syncSliders();
+      showMessage("Saved pond recalled into every POV.");
+    } catch {
+      showMessage("No compatible saved pond was found.");
+    }
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
+    lastFrame = now;
+    orbit += (orbitTarget - orbit) * 0.08;
+    updateMic();
+
+    if (running) {
+      elapsed += dt;
+      stageElapsed += dt;
+      simulationStep(dt);
+      if (autoSequence && stageElapsed > 12 && stage < stages.length - 1) setStage(stage + 1, false);
+    }
+
+    if (now - lastTelemetry > 180) {
+      computeTelemetry();
+      lastTelemetry = now;
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll("[data-view]").forEach(button => button.addEventListener("click", () => setView(button.dataset.view)));
+  document.querySelectorAll("[data-stage]").forEach(button => button.addEventListener("click", () => setStage(button.dataset.stage, true)));
+  [ui.temp, ui.coupling, ui.flow, ui.slice].forEach(input => input.addEventListener("input", syncSliders));
+  document.getElementById("honkBtn").addEventListener("click", honk);
+  ui.mic.addEventListener("click", toggleMic);
+  ui.pause.addEventListener("click", () => {
+    running = !running;
+    ui.pause.textContent = running ? "Pause" : "Resume";
+    ui.pause.classList.toggle("active", !running);
+  });
+  ui.auto.addEventListener("click", () => {
+    autoSequence = !autoSequence;
+    ui.auto.classList.toggle("active", autoSequence);
+    showMessage(autoSequence ? "Automatic pond sequence resumed." : "Sequence held at current state.");
+  });
+  document.getElementById("loadPresetBtn").addEventListener("click", () => preset(ui.preset.value));
+  document.getElementById("scatterBtn").addEventListener("click", scatter);
+  document.getElementById("saveBtn").addEventListener("click", saveState);
+  document.getElementById("recallBtn").addEventListener("click", recallState);
+
+  window.addEventListener("keydown", event => {
+    if (event.key >= "1" && event.key <= "4") setView(["pond", "slice", "volume", "parallel"][Number(event.key) - 1]);
+    if (event.key === " ") { event.preventDefault(); honk(); }
+    if (event.key.toLowerCase() === "p") ui.pause.click();
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      const delta = event.key === "ArrowUp" ? 1 : -1;
+      ui.slice.value = clamp(Number(ui.slice.value) + delta, 0, SIZE - 1);
+      syncSliders();
+    }
+  });
+
+  canvas.addEventListener("pointerdown", event => {
+    dragging = true;
+    lastPointerX = event.clientX;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointermove", event => {
+    if (!dragging) return;
+    orbitTarget += (event.clientX - lastPointerX) * 0.008;
+    lastPointerX = event.clientX;
+  });
+  canvas.addEventListener("pointerup", () => dragging = false);
+  canvas.addEventListener("dblclick", honk);
+  window.addEventListener("resize", resize);
+  window.addEventListener("beforeunload", () => micStream?.getTracks().forEach(track => track.stop()));
+
+  initArrays();
+  preset("goose_trace");
+  resize();
+  syncSliders();
+  setStage(0, false);
+  setView("pond");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
